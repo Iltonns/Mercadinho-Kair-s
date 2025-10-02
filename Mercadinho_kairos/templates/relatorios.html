@@ -462,7 +462,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btn-gerar-relatorio').addEventListener('click', aplicarFiltros);
     document.getElementById('btn-limpar-filtros').addEventListener('click', limparFiltros);
 
-    // REMOVIDO: Aplicar filtros automaticamente ao carregar
+
     // Isso causava o problema de carregamento infinito
 });
 
@@ -486,7 +486,6 @@ function aplicarFiltros() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Filtrando...';
     btn.disabled = true;
 
-    mostrarModalCarregamento('Aplicando filtros aos relatórios...');
 
     // Fazer requisição AJAX
     fetch('/relatorios/filtrar', {
@@ -511,6 +510,18 @@ function aplicarFiltros() {
         
         if (data.success) {
             atualizarInterface(data);
+
+            // Ativar aba conforme o filtro selecionado
+            if (tipoRelatorio === 'estoque') {
+                var tab = new bootstrap.Tab(document.querySelector('#estoque-tab'));
+                tab.show();
+            } else if (tipoRelatorio === 'movimentacoes') {
+                var tab = new bootstrap.Tab(document.querySelector('#movimentacoes-tab'));
+                tab.show();
+            } else if (tipoRelatorio === 'vendas') {
+                var tab = new bootstrap.Tab(document.querySelector('#vendas-tab'));
+                tab.show();
+            }
             mostrarNotificacao(`✅ Filtros aplicados! ${data.estoque.length} produtos, ${data.vendas.length} vendas`, 'success');
         } else {
             throw new Error(data.error || 'Erro ao aplicar filtros');
@@ -528,15 +539,23 @@ function aplicarFiltros() {
     });
 }
 
+
 // Função para atualizar a interface com os dados filtrados
 function atualizarInterface(data) {
-    // Atualizar estatísticas rápidas
+    // Atualizar estatísticas rápidas (Cards de cima)
     if (data.estatisticas) {
         document.getElementById('stat-total-produtos').textContent = data.estatisticas.total_produtos || 0;
-        document.getElementById('stat-em-estoque').textContent = (data.estatisticas.total_produtos - data.estatisticas.produtos_estoque_baixo - data.produtos_sem_estoque) || 0;
+        
+        // Corrigido: Adiciona verificação de existência (se o elemento for 'null', ignora a atualização)
+        const statEmEstoque = document.getElementById('stat-em-estoque');
+        if(statEmEstoque) statEmEstoque.textContent = (data.estatisticas.total_produtos - data.estatisticas.produtos_estoque_baixo - data.produtos_sem_estoque) || 0;
+        
         document.getElementById('stat-sem-estoque').textContent = data.produtos_sem_estoque || 0;
+        document.getElementById('stat-estoque-baixo').textContent = data.estatisticas.produtos_estoque_baixo || 0; // Adicionado
         document.getElementById('stat-total-vendas').textContent = data.estatisticas.total_transacoes || 0;
-        document.getElementById('stat-itens-vendidos').textContent = data.estatisticas.total_itens_vendidos || 0;
+        
+        // REMOVIDO: stat-itens-vendidos (Não existe nos cards de cima)
+        
         document.getElementById('stat-valor-total').textContent = 'R$ ' + (data.estatisticas.valor_estoque || 0).toFixed(2);
     }
 
@@ -628,9 +647,10 @@ function atualizarTabelaEstoque(estoque, estatisticas) {
         const estoqueBaixo = document.getElementById('resumo-estoque-baixo');
         const semEstoque = document.getElementById('resumo-sem-estoque');
         
-        if (emEstoque) emEstoque.textContent = estatisticas.total_produtos - estatisticas.produtos_estoque_baixo - estatisticas.produtos_sem_estoque;
-        if (estoqueBaixo) estoqueBaixo.textContent = estatisticas.produtos_estoque_baixo;
-        if (semEstoque) semEstoque.textContent = estatisticas.produtos_sem_estoque;
+        // CORREÇÃO CRÍTICA: Garantir que os elementos existem antes de acessar textContent
+        if (emEstoque) emEstoque.textContent = (estatisticas.total_produtos - estatisticas.produtos_estoque_baixo - estatisticas.produtos_sem_estoque) || 0;
+        if (estoqueBaixo) estoqueBaixo.textContent = estatisticas.produtos_estoque_baixo || 0;
+        if (semEstoque) semEstoque.textContent = estatisticas.produtos_sem_estoque || 0;
     }
 }
 
@@ -791,40 +811,43 @@ function mostrarNotificacao(mensagem, tipo) {
 }
 
 // Funções de exportação (simuladas)
+// Funções de exportação (CORRIGIDAS PARA CHAMAR O SERVIDOR)
 function exportarPDF() { 
-    mostrarModalCarregamento('Gerando relatório em PDF...');
-    setTimeout(() => {
-        ocultarModalCarregamento();
-        mostrarNotificacao('📊 PDF gerado com sucesso!', 'success');
-    }, 2000);
+    // Redireciona a janela atual para o endpoint de exportação PDF
+    mostrarNotificacao('📊 Gerando relatório completo em PDF...', 'info');
+    window.location.href = '{{ url_for("exportar_pdf") }}';
 }
 
 function exportarExcel() { 
-    mostrarModalCarregamento('Gerando relatório em Excel...');
-    setTimeout(() => {
-        ocultarModalCarregamento();
-        mostrarNotificacao('📈 Excel gerado com sucesso!', 'success');
-    }, 2000);
+    // Redireciona a janela atual para o endpoint de exportação Excel
+    mostrarNotificacao('📈 Gerando relatório completo em Excel...', 'info');
+    window.location.href = '{{ url_for("exportar_excel") }}';
 }
 
+// Funções de exportação específicas para abas (usando as rotas de exportação completas como fallback)
 function exportarEstoquePDF() { 
     mostrarNotificacao('📦 Exportando estoque em PDF...', 'info');
+    window.location.href = '{{ url_for("exportar_pdf") }}';
 }
 
 function exportarEstoqueExcel() { 
     mostrarNotificacao('📦 Exportando estoque em Excel...', 'info');
+    window.location.href = '{{ url_for("exportar_excel") }}';
 }
 
 function exportarVendasPDF() { 
     mostrarNotificacao('🛒 Exportando vendas em PDF...', 'info');
+    window.location.href = '{{ url_for("exportar_pdf") }}';
 }
 
 function exportarVendasExcel() { 
     mostrarNotificacao('🛒 Exportando vendas em Excel...', 'info');
+    window.location.href = '{{ url_for("exportar_excel") }}';
 }
 
 function exportarMovimentacoesPDF() { 
     mostrarNotificacao('🔄 Exportando movimentações em PDF...', 'info');
+    window.location.href = '{{ url_for("exportar_pdf") }}';
 }
 </script>
 
@@ -895,17 +918,16 @@ function exportarMovimentacoesPDF() {
 
 /* Tabs personalizadas - VISUAL UNIFICADO E PROFISSIONAL */
 .nav-tabs-custom {
-    background: linear-gradient(90deg, #7b5eea 0%, #764ba2 100%);
+    background: transparent !important; /* Remove o gradiente */
     border-radius: 1rem 1rem 0 0;
     padding: 0.25rem 0.5rem;
 }
 
 .nav-tabs-custom .nav-link {
-    border: none;
+    background: transparent !important; /* Remove fundo das abas */
+    color: #2d3748 !important; /* Cor escura para o texto das abas */
     border-bottom: 3px solid transparent;
     font-weight: 600;
-    color: #fff !important;
-    background: transparent;
     padding: 1rem 1.5rem;
     border-radius: 0.75rem 0.75rem 0 0;
     margin-right: 0.25rem;
@@ -916,24 +938,24 @@ function exportarMovimentacoesPDF() {
     z-index: 1;
 }
 
-.nav-tabs-custom .nav-link:not(.active):hover {
-    background: rgba(255,255,255,0.06);
-    color: #fff !important;
-    border-bottom: 3px solid #bdbdbd;
-}
-
 .nav-tabs-custom .nav-link.active {
-    color: #fff !important;
-    background: transparent;
-    border-bottom: 3px solid #fff;
+    color: #212529 !important; /* Cor ainda mais escura para aba ativa */
+    background: transparent !important;
+    border-bottom: 3px solid #212529;
     font-weight: 700;
     box-shadow: none;
     z-index: 2;
 }
 
+.nav-tabs-custom .nav-link:not(.active):hover {
+    background: rgba(118, 75, 162, 0.06);
+    color: #764ba2 !important;
+    border-bottom: 3px solid #bdbdbd;
+}
+
 .nav-tabs-custom .nav-link .badge {
     background: #fff !important;
-    color: #764ba2 !important;
+    color: #212529 !important; /* Cor escura para o número */
     font-weight: 700;
     margin-left: 0.5rem;
     box-shadow: 0 1px 4px rgba(102,126,234,0.10);

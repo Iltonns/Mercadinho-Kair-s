@@ -351,29 +351,31 @@ def filtrar_relatorios():
 @app.route('/produtos')
 def produtos():
     try:
-        lista_produtos = db.listar_produtos()
+        produtos = db.listar_produtos()
         
         # Calcular estatísticas para o template
-        total_produtos = len(lista_produtos)
-        produtos_com_estoque = len([p for p in lista_produtos if p.get('quantidade', 0) > 0])
-        produtos_estoque_baixo = len([p for p in lista_produtos if 0 < p.get('quantidade', 0) <= 5])
-        produtos_sem_estoque = len([p for p in lista_produtos if p.get('quantidade', 0) == 0])
+        total_produtos = len(produtos)
+        produtos_com_estoque = len([p for p in produtos if p.get('quantidade', 0) > 0])
+        produtos_estoque_baixo = len([p for p in produtos if 0 < p.get('quantidade', 0) <= 10])
+        produtos_sem_estoque = len([p for p in produtos if p.get('quantidade', 0) == 0])
         
         # Calcular valor total do estoque
-        valor_total_estoque = sum(p.get('preco', 0) * p.get('quantidade', 0) for p in lista_produtos)
+        valor_total_estoque = sum(p.get('preco', 0) * p.get('quantidade', 0) for p in produtos)
         
         # Contar produtos recentes (últimos 7 dias)
-        produtos_recentes_count = len([p for p in lista_produtos 
+        produtos_recentes_count = len([p for p in produtos 
                                      if p.get('data_criacao') 
                                      and (datetime.now() - p.get('data_criacao')).days <= 7])
         
-        return render_template('produtos.html', 
-                             produtos=lista_produtos,
-                             produtos_com_estoque=produtos_com_estoque,
-                             produtos_estoque_baixo=produtos_estoque_baixo,
-                             produtos_sem_estoque=produtos_sem_estoque,
-                             valor_total_estoque=valor_total_estoque,
-                             produtos_recentes_count=produtos_recentes_count)
+        return render_template(
+            "produtos.html",
+            produtos=produtos,
+            produtos_com_estoque=sum(1 for p in produtos if p.get('quantidade', 0) > 0),
+            produtos_estoque_baixo=produtos_estoque_baixo,
+            produtos_sem_estoque=sum(1 for p in produtos if p.get('quantidade', 0) == 0),
+            valor_total_estoque=sum(p.get('preco', 0) * p.get('quantidade', 0) for p in produtos),
+            produtos_recentes_count=produtos_recentes_count,
+        )
                              
     except Exception as e:
         print(f"Erro ao carregar produtos: {e}")
@@ -859,6 +861,7 @@ def finalizar_venda():
         return jsonify({'success': False, 'mensagem': 'Campos obrigatórios faltando!'}), 400
 
     # Chame a função de registrar venda
+    # NOTA: A função registrar_venda_completa no logica_banco.py foi corrigida para não usar 'self'
     venda_id, mensagem = db.registrar_venda_completa(
         cliente_id=cliente_id,
         itens_carrinho=itens_carrinho,
