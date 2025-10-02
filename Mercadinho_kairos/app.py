@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from datetime import datetime
 from werkzeug.security import check_password_hash
-import Mercadinho_kairos.logica_banco as db
+from Mercadinho_kairos.logica_banco import db
 import re
 import os
 import io
@@ -1220,3 +1220,4 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     
     app.run(host=host, port=port, debug=debug_mode)
+
