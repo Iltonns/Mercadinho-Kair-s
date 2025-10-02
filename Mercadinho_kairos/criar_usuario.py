@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from logica_banco import add_user, setup_database
+from Mercadinho_kairos.logica_banco import add_user, setup_database
 
 def criar_primeiro_usuario():
     """Cria o primeiro usuário administrativo."""

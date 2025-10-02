@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from datetime import datetime
 from werkzeug.security import check_password_hash
-import logica_banco as db
+import Mercadinho_kairos.logica_banco as db
 import re
 import os
 import io
