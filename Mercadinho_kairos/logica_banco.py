@@ -493,6 +493,19 @@ def buscar_produtos_por_nome(termo):
         if conn:
             conn.close()
             
+def buscar_produto_por_codigo_personalizado(termo):
+    import sqlite3
+    conn = sqlite3.connect('seu_banco.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT * FROM produtos
+        WHERE codigo_barras = ?
+        OR nome LIKE ?
+        OR codigo_personalizado = ?
+    """, (termo, f"%{termo}%", termo))
+    produto = cursor.fetchone()
+    conn.close()
+    return produto            
 
 # ==============================================================================
 # 7. FUNÇÕES PARA PRODUTOS PESÁVEIS
@@ -1143,3 +1156,4 @@ if __name__ == '__main__':
         print("Banco de dados configurado (tabelas criadas ou já existentes).")
     else:
         print("Erro na configuração do banco de dados.")
+

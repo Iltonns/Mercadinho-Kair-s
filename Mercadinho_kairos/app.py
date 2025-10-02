@@ -5,17 +5,17 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from datetime import datetime
 from werkzeug.security import check_password_hash
-from Mercadinho_kairos.logica_banco import db
 import re
 import os
 import io
 import pandas as pd
 import copy
-from Imports ReportLab para PDF
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
+import Mercadinho_kairos.logica_banco as db
+from Mercadinho_kairos.logica_banco import buscar_produto_por_codigo_personalizado
 
 # ==============================================================================
 # 2. CONFIGURAÇÃO INICIAL
@@ -136,11 +136,12 @@ def dashboard():
         
         return render_template('dashboard.html', 
                              estatisticas=estatisticas,
-                             produtos_recentes=produtos_recentes)
+                             produtos_recentes=produtos_recentes,
+                             now=datetime.now())
     except Exception as e:
-        print(f"Erro ao carregar dashboard: {e}")  # Log de erro
-        flash('Erro ao carregar dashboard.', 'danger')
-        return redirect(url_for('produtos'))
+        print(e)
+        flash("Erro ao carregar dashboard.", "danger")
+        return render_template("dashboard.html", now=datetime.now())
 
 # ==============================================================================
 # 7. ROTA DE RELATÓRIOS (MOVIDA PARA CIMA PARA EVITAR ERRO DE IMPORTAÇÃO)
@@ -508,105 +509,36 @@ def buscar_produto_estoque():
 @app.route('/buscar_produto_caixa', methods=['POST'])
 @login_required
 def buscar_produto_caixa():
-    """Busca de produtos para o caixa: retorna lista de matches (código exato ou nome parcial)."""
     try:
-        data = request.get_json()
-        
-        # CORREÇÃO: Garante que 'data' é um dicionário, evitando AttributeError se for None
-        if not isinstance(data, dict):
-            data = {} 
+        codigo = request.form.get('codigo')
+        if not codigo:
+            return jsonify({'erro': 'Código do produto não informado.'}), 400
 
-        # O termo é buscado do campo 'codigo' que o front-end envia
-        termo = sanitizar_input(data.get('codigo', ''))
+        # Exemplo de busca no banco (ajuste conforme sua lógica)
+        produto = buscar_produto_por_codigo(codigo)  # Certifique-se que essa função existe
+        if not produto:
+            return jsonify({'erro': 'Produto não encontrado.'}), 404
 
-        if not termo:
-            return jsonify({'success': False, 'message': 'Código ou nome do produto é obrigatório'})
-
-        # Esta função já faz a busca parcial por nome e código de barras, conforme solicitado.
-        produtos_lista = db.buscar_produtos_por_nome(termo) 
-        
-        if produtos_lista:
-            return jsonify({
-                'success': True,
-                'produtos': produtos_lista
-            })
-        else:
-            # Garante que o front-end recebe uma resposta clara
-            return jsonify({'success': False, 'message': 'Produto não encontrado', 'produtos': []})
-            
+        return jsonify({'produto': produto})
     except Exception as e:
-        print(f"Erro na busca ao produto no caixa: {e}")
-        # Adiciona o status 500 para ser capturado pelo front-end com um erro
-        return jsonify({'success': False, 'message': 'Erro interno do servidor', 'produtos': []}), 500
-    
+        print(f"Erro ao buscar produto no caixa: {e}")
+        return jsonify({'erro': 'Erro interno ao buscar produto.'}), 500
+
 @app.route('/caixa/buscar_auto', methods=['POST'])
 @login_required
-def buscar_produto_auto():
-    """Busca automática de produtos para o caixa"""
+def buscar_produto_caixa_auto():
     try:
-        dados = request.get_json()
-        codigo = dados.get('codigo', '').strip()
-        
-        if not codigo:
-            return jsonify({'success': False, 'message': 'Código vazio'})
-        
-        # Buscar produto por código de barras
-        produto = db.buscar_produto_por_codigo(codigo)
+        termo = request.form.get('codigo')
+        produto = buscar_produto_por_codigo_personalizado(termo)
         if produto:
-            # Verificar se é pesável
-            if produto.get('pesavel'):
-                return jsonify({
-                    'success': True,
-                    'pesavel': True,
-                    'produto': produto
-                })
-            else:
-                return jsonify({
-                    'success': True,
-                    'adicionar_carrinho': True,
-                    'produto': produto,
-                    'quantidade': 1
-                })
-        
-        # Buscar por código personalizado
-        produto = db.buscar_produto_por_codigo_personalizado(codigo)
-        if produto:
-            if produto.get('pesavel'):
-                return jsonify({
-                    'success': True,
-                    'pesavel': True,
-                    'produto': produto
-                })
-            else:
-                return jsonify({
-                    'success': True,
-                    'adicionar_carrinho': True,
-                    'produto': produto,
-                    'quantidade': 1
-                })
-        
-        # Buscar por nome (parcial)
-        produtos = db.buscar_produtos_por_nome(codigo)
-        if produtos:
-            return jsonify({
-                'success': True,
-                'produtos': produtos[:10],  # Limitar a 10 resultados
-                'message': f'Encontrados {len(produtos)} produtos'
-            })
-        
-        return jsonify({
-            'success': False,
-            'message': 'Produto não encontrado'
-        })
-        
+            return jsonify({'success': True, 'produto': produto})
+        else:
+            return jsonify({'success': False, 'message': 'Produto não encontrado'})
     except Exception as e:
         print(f"Erro na busca automática: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Erro interno na busca'
-        })
+        return jsonify({'success': False, 'message': 'Erro interno na busca'})
 
- 
+
 # Rota para listagem e gerenciamento de Produtos Pesáveis
 @app.route('/produtos_pesaveis')
 @login_required

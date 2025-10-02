@@ -493,11 +493,6 @@
                         </a>
                     </li>
                     
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'vendas' }}" href="{{ url_for('vendas') }}">
-                            <i class="fas fa-receipt"></i> Vendas
-                        </a>
-                    </li>
                     
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.endpoint == 'relatorios' }}" href="{{ url_for('relatorios') }}">
@@ -582,12 +577,7 @@
                 </div>
                 <div class="col-md-6 text-md-end">
                     <p class="mb-1 text-light opacity-75">
-<<<<<<< HEAD
-                        &copy; {{ agora.year }} Mercadinho Kairós. Todos os direitos reservados.
-
-=======
-                        &copy; {{ now.year }} Mercadinho Kairós. Todos os direitos reservados.
->>>>>>> dd54c40a9ad5608e9988e307a7779788015f3b42
+                        &copy; {{ current_year }} Mercadinho Kairós. Todos os direitos reservados.
                     </p>
                     <small class="text-light opacity-50">Versão 2.0 - Sistema Profissional</small>
                 </div>
