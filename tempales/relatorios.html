@@ -1,0 +1,1060 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1"><i class="fas fa-chart-bar me-2 text-gradient-primary"></i>Relatórios do Sistema</h1>
+                    <p class="text-muted mb-0">Relatórios completos de estoque, vendas e movimentações em tempo real</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-gradient-danger shadow-sm" id="btn-exportar-pdf">
+                        <i class="fas fa-file-pdf me-2"></i>Exportar PDF
+                    </button>
+                    <button class="btn btn-gradient-success shadow-sm" id="btn-exportar-excel">
+                        <i class="fas fa-file-excel me-2"></i>Exportar Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas Rápidas -->
+    <div class="row mb-4">
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card card-statistic bg-gradient-primary text-white shadow-lg">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-boxes fa-2x mb-2 text-white"></i>
+                    <h3 class="text-white mb-0" id="stat-total-produtos">{{ estatisticas.total_produtos or 0 }}</h3>
+                    <small>Total Produtos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card card-statistic bg-gradient-success text-white shadow-lg">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-check-circle fa-2x mb-2 text-white"></i>
+                    <h3 class="text-white mb-0" id="stat-em-estoque">{{ (estatisticas.total_produtos - estatisticas.produtos_estoque_baixo - produtos_sem_estoque) or 0 }}</h3>
+                    <small>Em Estoque</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card card-statistic bg-gradient-warning text-white shadow-lg">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2 text-white"></i>
+                    <h3 class="text-white mb-0" id="stat-sem-estoque">{{ produtos_sem_estoque or 0 }}</h3>
+                    <small>Sem Estoque</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card card-statistic bg-gradient-info text-white shadow-lg">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-receipt fa-2x mb-2 text-white"></i>
+                    <h3 class="text-white mb-0" id="stat-total-vendas">{{ estatisticas.total_transacoes or 0 }}</h3>
+                    <small>Total Vendas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card card-statistic bg-gradient-purple text-white shadow-lg">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-shopping-cart fa-2x mb-2 text-white"></i>
+                    <h3 class="text-white mb-0" id="stat-itens-vendidos">{{ estatisticas.total_itens_vendidos or 0 }}</h3>
+                    <small>Itens Vendidos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card card-statistic bg-gradient-orange text-white shadow-lg">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-dollar-sign fa-2x mb-2 text-white"></i>
+                    <h4 class="text-white mb-0" id="stat-valor-total">R$ {{ "%.2f"|format(estatisticas.valor_estoque or 0) }}</h4>
+                    <small>Valor Estoque</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros Avançados -->
+    <div class="card border-0 shadow-lg mb-4">
+        <div class="card-header bg-gradient-dark text-white py-3">
+            <h5 class="card-title mb-0"><i class="fas fa-filter me-2"></i>Filtros do Relatório</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="data-inicio" class="form-label fw-semibold text-dark">Data Início</label>
+                    <input type="date" class="form-control form-control-lg border-primary" id="data-inicio" value="{{ hoje }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="data-fim" class="form-label fw-semibold text-dark">Data Fim</label>
+                    <input type="date" class="form-control form-control-lg border-primary" id="data-fim" value="{{ hoje }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="tipo-relatorio" class="form-label fw-semibold text-dark">Tipo de Relatório</label>
+                    <select class="form-select form-select-lg border-primary" id="tipo-relatorio">
+                        <option value="completo">📊 Relatório Completo</option>
+                        <option value="estoque">📦 Apenas Estoque</option>
+                        <option value="vendas">🛒 Apenas Vendas</option>
+                        <option value="movimentacoes">🔄 Apenas Movimentações</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="d-flex gap-2 w-100">
+                        <button class="btn btn-gradient-primary btn-lg flex-fill shadow" id="btn-gerar-relatorio">
+                            <i class="fas fa-sync-alt me-2"></i>Atualizar
+                        </button>
+                        <button class="btn btn-outline-danger btn-lg" id="btn-limpar-filtros" title="Limpar Filtros">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="alert alert-info border-0 bg-info bg-opacity-10 mb-0">
+                        <i class="fas fa-info-circle me-2 text-info"></i>
+                        <small class="text-dark">
+                            <strong>Dica:</strong> Os filtros de data aplicam-se principalmente ao relatório de vendas e movimentações. 
+                            Para ver todas as vendas, deixe as datas em branco.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Abas de Navegação -->
+    <div class="card border-0 shadow-lg">
+        <div class="card-header bg-white border-bottom-0 pb-0">
+            <ul class="nav nav-tabs card-header-tabs nav-tabs-custom" id="relatoriosTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="estoque-tab" data-bs-toggle="tab" data-bs-target="#estoque" type="button" role="tab">
+                        <i class="fas fa-boxes me-2"></i>Estoque Atual
+                        <span class="badge bg-primary ms-2" id="badge-estoque">{{ estoque|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="movimentacoes-tab" data-bs-toggle="tab" data-bs-target="#movimentacoes" type="button" role="tab">
+                        <i class="fas fa-exchange-alt me-2"></i>Movimentações
+                        <span class="badge bg-info ms-2" id="badge-movimentacoes">{{ movimentacoes|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="vendas-tab" data-bs-toggle="tab" data-bs-target="#vendas" type="button" role="tab">
+                        <i class="fas fa-receipt me-2"></i>Relatório de Vendas
+                        <span class="badge bg-warning ms-2" id="badge-vendas">{{ vendas|length }}</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body">
+            <div class="tab-content" id="relatoriosContent">
+                <!-- Aba 1: Estoque -->
+                <div class="tab-pane fade show active" id="estoque" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title mb-0 text-success fw-bold">
+                            <i class="fas fa-boxes me-2"></i>Relatório de Estoque Atual
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-gradient-success shadow-sm" onclick="exportarEstoquePDF()">
+                                <i class="fas fa-file-pdf me-1"></i>PDF
+                            </button>
+                            <button class="btn btn-gradient-primary shadow-sm" onclick="exportarEstoqueExcel()">
+                                <i class="fas fa-file-excel me-1"></i>Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    {% if estoque %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped table-bordered" id="tabela-estoque">
+                            <thead class="table-success">
+                                <tr>
+                                    <th width="5%" class="text-center">ID</th>
+                                    <th width="25%">Produto</th>
+                                    <th width="15%">Código</th>
+                                    <th width="12%" class="text-center">Preço Unit.</th>
+                                    <th width="12%" class="text-center">Estoque</th>
+                                    <th width="16%" class="text-center">Status</th>
+                                    <th width="15%" class="text-center">Valor Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-estoque">
+                                {% for produto in estoque %}
+                                {% set valor_total_produto = produto.preco * produto.quantidade %}
+                                <tr>
+                                    <td class="text-center"><span class="badge bg-dark">#{{ produto.id }}</span></td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0">
+                                                <div class="bg-success bg-opacity-20 rounded-circle p-2 me-3">
+                                                    <i class="fas fa-box text-success"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-0 text-dark fw-bold">{{ produto.nome }}</h6>
+                                                <small class="text-muted">Categoria: {{ produto.categoria or 'Geral' }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <code class="text-dark bg-light px-2 py-1 rounded">{{ produto.codigo_barras or 'N/A' }}</code>
+                                    </td>
+                                    <td class="text-center fw-bold text-success fs-6">R$ {{ "%.2f"|format(produto.preco) }}</td>
+                                    <td class="text-center">
+                                        <span class="fw-bold fs-6 {% if produto.quantidade > 10 %}text-success{% elif produto.quantidade > 0 %}text-warning{% else %}text-danger{% endif %}">
+                                            {{ produto.quantidade }} un
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if produto.quantidade > 10 %}
+                                        <span class="badge bg-success fs-6"><i class="fas fa-check me-1"></i>Disponível</span>
+                                        {% elif produto.quantidade > 0 %}
+                                        <span class="badge bg-warning fs-6"><i class="fas fa-exclamation me-1"></i>Estoque Baixo</span>
+                                        {% else %}
+                                        <span class="badge bg-danger fs-6"><i class="fas fa-times me-1"></i>Esgotado</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center fw-bold text-info fs-6">R$ {{ "%.2f"|format(valor_total_produto) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <td colspan="6" class="text-end fw-bold fs-5">VALOR TOTAL DO ESTOQUE:</td>
+                                    <td class="text-center fw-bold text-warning fs-5">
+                                        R$ {{ "%.2f"|format(estatisticas.valor_estoque) }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Resumo Estatístico -->
+                    <div class="row mt-4">
+                        <div class="col-md-3">
+                            <div class="card card-statistic bg-gradient-success text-white">
+                                <div class="card-body text-center py-4">
+                                    <i class="fas fa-box fa-2x mb-2 text-white"></i>
+                                    <h3 class="text-white mb-1" id="resumo-em-estoque">{{ estatisticas.total_produtos - estatisticas.produtos_estoque_baixo - produtos_sem_estoque }}</h3>
+                                    <small>Em Estoque</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card card-statistic bg-gradient-warning text-white">
+                                <div class="card-body text-center py-4">
+                                    <i class="fas fa-exclamation-triangle fa-2x mb-2 text-white"></i>
+                                    <h3 class="text-white mb-1" id="resumo-estoque-baixo">{{ estatisticas.produtos_estoque_baixo }}</h3>
+                                    <small>Estoque Baixo</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card card-statistic bg-gradient-danger text-white">
+                                <div class="card-body text-center py-4">
+                                    <i class="fas fa-times-circle fa-2x mb-2 text-white"></i>
+                                    <h3 class="text-white mb-1" id="resumo-sem-estoque">{{ produtos_sem_estoque }}</h3>
+                                    <small>Sem Estoque</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card card-statistic bg-gradient-info text-white">
+                                <div class="card-body text-center py-4">
+                                    <i class="fas fa-dollar-sign fa-2x mb-2 text-white"></i>
+                                    <h4 class="text-white mb-1">R$ {{ "%.2f"|format(estatisticas.valor_estoque) }}</h4>
+                                    <small>Valor Total</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Nenhum produto cadastrado</h4>
+                        <p class="text-muted">Não há produtos para exibir no relatório de estoque.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Aba 2: Movimentações -->
+                <div class="tab-pane fade" id="movimentacoes" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title mb-0 text-info fw-bold">
+                            <i class="fas fa-exchange-alt me-2"></i>Histórico de Movimentações de Estoque
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-gradient-info shadow-sm" onclick="exportarMovimentacoesPDF()">
+                                <i class="fas fa-file-pdf me-1"></i>PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    {% if movimentacoes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered" id="tabela-movimentacoes">
+                            <thead class="table-info">
+                                <tr>
+                                    <th width="25%">Produto</th>
+                                    <th width="15%" class="text-center">Tipo</th>
+                                    <th width="15%" class="text-center">Quantidade</th>
+                                    <th width="25%">Data/Hora</th>
+                                    <th width="20%" class="text-center">Venda</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-movimentacoes">
+                                {% for item in movimentacoes %}
+                                <tr>
+                                    <td>
+                                        <strong class="text-dark">{{ item.produto_nome }}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger fs-6">
+                                            <i class="fas fa-arrow-up me-1"></i> Saída
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="fw-bold text-danger fs-6">
+                                            {{ item.quantidade }} un
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ item.data_venda }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="text-muted">Venda #{{ item.venda_id or 'N/A' }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-exchange-alt fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Nenhuma movimentação registrada</h4>
+                        <p class="text-muted">Não há movimentações de estoque para exibir.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Aba 3: Vendas -->
+                <div class="tab-pane fade" id="vendas" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title mb-0 text-warning fw-bold">
+                            <i class="fas fa-receipt me-2"></i>Relatório de Vendas
+                        </h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-gradient-warning shadow-sm" onclick="exportarVendasPDF()">
+                                <i class="fas fa-file-pdf me-1"></i>PDF
+                            </button>
+                            <button class="btn btn-gradient-success shadow-sm" onclick="exportarVendasExcel()">
+                                <i class="fas fa-file-excel me-1"></i>Excel
+                            </button>
+                        </div>
+                    </div>
+
+                    {% if vendas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped table-bordered" id="tabela-vendas">
+                            <thead class="table-warning">
+                                <tr>
+                                    <th width="8%" class="text-center">ID Venda</th>
+                                    <th width="12%">Data</th>
+                                    <th width="18%">Cliente</th>
+                                    <th width="22%">Produto</th>
+                                    <th width="8%" class="text-center">Qtd</th>
+                                    <th width="12%" class="text-center">Unitário</th>
+                                    <th width="10%" class="text-center">Subtotal</th>
+                                    <th width="10%" class="text-center">Pagamento</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-vendas">
+                                {% for venda in vendas %}
+                                {% set subtotal = venda.preco_unitario * venda.quantidade %}
+                                <tr>
+                                    <td class="text-center"><span class="badge bg-dark">#{{ venda.id }}</span></td>
+                                    <td><small class="text-dark">{{ venda.data_venda }}</small></td>
+                                    <td class="text-dark">{{ venda.cliente_nome or 'Cliente Avulso' }}</td>
+                                    <td class="text-dark">{{ venda.produto_nome }}</td>
+                                    <td class="text-center fw-bold text-dark">{{ venda.quantidade }} un</td>
+                                    <td class="text-center text-success fw-bold">R$ {{ "%.2f"|format(venda.preco_unitario) }}</td>
+                                    <td class="text-center fw-bold text-primary">R$ {{ "%.2f"|format(subtotal) }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark small">{{ venda.forma_pagamento or 'N/A' }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-dark">
+                                <tr>
+                                    <td colspan="6" class="text-end fw-bold fs-5">TOTAL GERAL DE VENDAS:</td>
+                                    <td colspan="2" class="text-center fw-bold text-warning fs-5">
+                                        R$ {{ "%.2f"|format(estatisticas.total_vendas_valor) }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Resumo de Vendas -->
+                    <div class="row mt-4">
+                        <div class="col-md-3">
+                            <div class="card card-statistic bg-gradient-info text-white">
+                                <div class="card-body text-center py-4">
+                                    <i class="fas fa-shopping-cart fa-2x mb-2 text-white"></i>
+                                    <h3 class="text-white mb-1" id="resumo-total-vendas">{{ estatisticas.total_transacoes }}</h3>
+                                    <small>Total Vendas</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card card-statistic bg-gradient-success text-white">
+                                <div class="card-body text-center py-4">
+                                    <i class="fas fa-box fa-2x mb-2 text-white"></i>
+                                    <h3 class="text-white mb-1" id="resumo-itens-vendidos">{{ estatisticas.total_itens_vendidos }}</h3>
+                                    <small>Itens Vendidos</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card card-statistic bg-gradient-warning text-white">
+                                <div class="card-body text-center py-4">
+                                    <i class="fas fa-dollar-sign fa-2x mb-2 text-white"></i>
+                                    <h4 class="text-white mb-1">R$ {{ "%.2f"|format(estatisticas.total_vendas_valor) }}</h4>
+                                    <small>Faturamento</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card card-statistic bg-gradient-purple text-white">
+                                <div class="card-body text-center py-4">
+                                    <i class="fas fa-chart-line fa-2x mb-2 text-white"></i>
+                                    <h4 class="text-white mb-1" id="resumo-ticket-medio">
+                                        R$ {{ "%.2f"|format(estatisticas.total_vendas_valor / estatisticas.total_transacoes if estatisticas.total_transacoes > 0 else 0) }}
+                                    </h4>
+                                    <small>Ticket Médio</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-receipt fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Nenhuma venda encontrada</h4>
+                        <p class="text-muted">Não há vendas para exibir no período selecionado.</p>
+                        <button class="btn btn-primary mt-2" onclick="limparFiltros()">
+                            <i class="fas fa-times me-2"></i>Limpar Filtros
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Carregamento -->
+<div class="modal fade" id="modalCarregamento" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-body text-center py-4 bg-gradient-primary text-white rounded">
+                <div class="spinner-border spinner-border-lg text-white mb-3" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <h6 class="text-white">Processando...</h6>
+                <p class="text-white mb-0 opacity-75" id="modal-mensagem">Aguarde enquanto aplicamos os filtros</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar datas padrão (últimos 30 dias) - MAS NÃO APLICAR FILTRO AUTOMÁTICO
+    const hoje = new Date();
+    const trintaDiasAtras = new Date();
+    trintaDiasAtras.setDate(hoje.getDate() - 30);
+
+    const formatarData = (d) => d.toISOString().split('T')[0];
+    
+    // Apenas definir os valores padrão, mas não aplicar filtro
+    document.getElementById('data-inicio').value = formatarData(trintaDiasAtras);
+    document.getElementById('data-fim').value = formatarData(hoje);
+
+    // Event listeners
+    document.getElementById('btn-exportar-pdf').addEventListener('click', exportarPDF);
+    document.getElementById('btn-exportar-excel').addEventListener('click', exportarExcel);
+    document.getElementById('btn-gerar-relatorio').addEventListener('click', aplicarFiltros);
+    document.getElementById('btn-limpar-filtros').addEventListener('click', limparFiltros);
+
+    // REMOVIDO: Aplicar filtros automaticamente ao carregar
+    // Isso causava o problema de carregamento infinito
+});
+
+// FUNÇÃO PRINCIPAL CORRIGIDA: Aplicar filtros
+function aplicarFiltros() {
+    const dataInicio = document.getElementById('data-inicio').value;
+    const dataFim = document.getElementById('data-fim').value;
+    const tipoRelatorio = document.getElementById('tipo-relatorio').value;
+
+    console.log('Aplicando filtros:', { dataInicio, dataFim, tipoRelatorio });
+
+    // Verificar se as datas são válidas
+    if (dataInicio && dataFim && dataInicio > dataFim) {
+        mostrarNotificacao('❌ Data início não pode ser maior que data fim!', 'danger');
+        return;
+    }
+
+    // Mostrar loading
+    const btn = document.getElementById('btn-gerar-relatorio');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Filtrando...';
+    btn.disabled = true;
+
+    mostrarModalCarregamento('Aplicando filtros aos relatórios...');
+
+    // Fazer requisição AJAX
+    fetch('/relatorios/filtrar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            data_inicio: dataInicio,
+            data_fim: dataFim,
+            tipo_relatorio: tipoRelatorio
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erro na resposta do servidor: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Resposta recebida:', data);
+        
+        if (data.success) {
+            atualizarInterface(data);
+            mostrarNotificacao(`✅ Filtros aplicados! ${data.estoque.length} produtos, ${data.vendas.length} vendas`, 'success');
+        } else {
+            throw new Error(data.error || 'Erro ao aplicar filtros');
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao filtrar:', error);
+        mostrarNotificacao('❌ Erro ao aplicar filtros: ' + error.message, 'danger');
+    })
+    .finally(() => {
+        // Restaurar botão
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        ocultarModalCarregamento();
+    });
+}
+
+// Função para atualizar a interface com os dados filtrados
+function atualizarInterface(data) {
+    // Atualizar estatísticas rápidas
+    if (data.estatisticas) {
+        document.getElementById('stat-total-produtos').textContent = data.estatisticas.total_produtos || 0;
+        document.getElementById('stat-em-estoque').textContent = (data.estatisticas.total_produtos - data.estatisticas.produtos_estoque_baixo - data.produtos_sem_estoque) || 0;
+        document.getElementById('stat-sem-estoque').textContent = data.produtos_sem_estoque || 0;
+        document.getElementById('stat-total-vendas').textContent = data.estatisticas.total_transacoes || 0;
+        document.getElementById('stat-itens-vendidos').textContent = data.estatisticas.total_itens_vendidos || 0;
+        document.getElementById('stat-valor-total').textContent = 'R$ ' + (data.estatisticas.valor_estoque || 0).toFixed(2);
+    }
+
+    // Atualizar badges das abas
+    document.getElementById('badge-estoque').textContent = data.estoque ? data.estoque.length : 0;
+    document.getElementById('badge-movimentacoes').textContent = data.movimentacoes ? data.movimentacoes.length : 0;
+    document.getElementById('badge-vendas').textContent = data.vendas ? data.vendas.length : 0;
+
+    // Atualizar abas específicas
+    atualizarTabelaEstoque(data.estoque || [], data.estatisticas || {});
+    atualizarTabelaMovimentacoes(data.movimentacoes || []);
+    atualizarTabelaVendas(data.vendas || [], data.estatisticas || {});
+}
+
+function atualizarTabelaEstoque(estoque, estatisticas) {
+    const tbody = document.getElementById('tbody-estoque');
+    
+    if (!estoque || estoque.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <i class="fas fa-box-open fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">Nenhum produto encontrado</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    let html = '';
+    estoque.forEach(produto => {
+        const valorTotal = (produto.preco || 0) * (produto.quantidade || 0);
+        let statusClass = '';
+        let statusText = '';
+        let statusBadge = '';
+
+        if ((produto.quantidade || 0) > 10) {
+            statusClass = 'text-success';
+            statusText = 'Disponível';
+            statusBadge = 'bg-success';
+        } else if ((produto.quantidade || 0) > 0) {
+            statusClass = 'text-warning';
+            statusText = 'Estoque Baixo';
+            statusBadge = 'bg-warning';
+        } else {
+            statusClass = 'text-danger';
+            statusText = 'Esgotado';
+            statusBadge = 'bg-danger';
+        }
+
+        html += `
+            <tr>
+                <td class="text-center"><span class="badge bg-dark">#${produto.id || 'N/A'}</span></td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-20 rounded-circle p-2 me-3">
+                                <i class="fas fa-box text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0 text-dark fw-bold">${produto.nome || 'Produto sem nome'}</h6>
+                            <small class="text-muted">Categoria: ${produto.categoria || 'Geral'}</small>
+                        </div>
+                    </div>
+                </td>
+                <td><code class="text-dark bg-light px-2 py-1 rounded">${produto.codigo_barras || 'N/A'}</code></td>
+                <td class="text-center fw-bold text-success fs-6">R$ ${(produto.preco || 0).toFixed(2)}</td>
+                <td class="text-center">
+                    <span class="fw-bold fs-6 ${statusClass}">
+                        ${produto.quantidade || 0} un
+                    </span>
+                </td>
+                <td class="text-center">
+                    <span class="badge ${statusBadge} fs-6">
+                        <i class="fas fa-${statusBadge === 'bg-success' ? 'check' : statusBadge === 'bg-warning' ? 'exclamation' : 'times'} me-1"></i>${statusText}
+                    </span>
+                </td>
+                <td class="text-center fw-bold text-info fs-6">R$ ${valorTotal.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+
+    // Atualizar resumo se existirem estatísticas
+    if (estatisticas) {
+        const emEstoque = document.getElementById('resumo-em-estoque');
+        const estoqueBaixo = document.getElementById('resumo-estoque-baixo');
+        const semEstoque = document.getElementById('resumo-sem-estoque');
+        
+        if (emEstoque) emEstoque.textContent = estatisticas.total_produtos - estatisticas.produtos_estoque_baixo - estatisticas.produtos_sem_estoque;
+        if (estoqueBaixo) estoqueBaixo.textContent = estatisticas.produtos_estoque_baixo;
+        if (semEstoque) semEstoque.textContent = estatisticas.produtos_sem_estoque;
+    }
+}
+
+function atualizarTabelaMovimentacoes(movimentacoes) {
+    const tbody = document.getElementById('tbody-movimentacoes');
+    
+    if (!movimentacoes || movimentacoes.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center py-4">
+                    <i class="fas fa-exchange-alt fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">Nenhuma movimentação encontrada</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    let html = '';
+    movimentacoes.forEach(item => {
+        html += `
+            <tr>
+                <td><strong class="text-dark">${item.produto_nome || 'Produto não identificado'}</strong></td>
+                <td class="text-center">
+                    <span class="badge bg-danger fs-6">
+                        <i class="fas fa-arrow-up me-1"></i> Saída
+                    </span>
+                </td>
+                <td class="text-center">
+                    <span class="fw-bold text-danger fs-6">
+                        ${item.quantidade || 0} un
+                    </span>
+                </td>
+                <td>
+                    <small class="text-muted">${item.data_venda || 'Data não disponível'}</small>
+                </td>
+                <td class="text-center">
+                    <span class="text-muted">Venda #${item.venda_id || 'N/A'}</span>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+function atualizarTabelaVendas(vendas, estatisticas) {
+    const tbody = document.getElementById('tbody-vendas');
+    
+    if (!vendas || vendas.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                    <i class="fas fa-receipt fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">Nenhuma venda encontrada</p>
+                    <button class="btn btn-primary mt-2" onclick="limparFiltros()">
+                        <i class="fas fa-times me-2"></i>Limpar Filtros
+                    </button>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    let html = '';
+    vendas.forEach(venda => {
+        const subtotal = (venda.preco_unitario || 0) * (venda.quantidade || 0);
+        html += `
+            <tr>
+                <td class="text-center"><span class="badge bg-dark">#${venda.id || 'N/A'}</span></td>
+                <td><small class="text-dark">${venda.data_venda || 'Data não disponível'}</small></td>
+                <td class="text-dark">${venda.cliente_nome || 'Cliente Avulso'}</td>
+                <td class="text-dark">${venda.produto_nome || 'Produto não identificado'}</td>
+                <td class="text-center fw-bold text-dark">${venda.quantidade || 0} un</td>
+                <td class="text-center text-success fw-bold">R$ ${(venda.preco_unitario || 0).toFixed(2)}</td>
+                <td class="text-center fw-bold text-primary">R$ ${subtotal.toFixed(2)}</td>
+                <td class="text-center">
+                    <span class="badge bg-light text-dark small">${venda.forma_pagamento || 'N/A'}</span>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+
+    // Atualizar resumo de vendas se existirem estatísticas
+    if (estatisticas) {
+        const totalVendas = document.getElementById('resumo-total-vendas');
+        const itensVendidos = document.getElementById('resumo-itens-vendidos');
+        const ticketMedio = document.getElementById('resumo-ticket-medio');
+        
+        if (totalVendas) totalVendas.textContent = estatisticas.total_transacoes || 0;
+        if (itensVendidos) itensVendidos.textContent = estatisticas.total_itens_vendidos || 0;
+        
+        if (ticketMedio) {
+            const ticket = estatisticas.total_transacoes > 0 ? 
+                (estatisticas.total_vendas_valor || 0) / estatisticas.total_transacoes : 0;
+            ticketMedio.textContent = 'R$ ' + ticket.toFixed(2);
+        }
+    }
+}
+
+function limparFiltros() {
+    const hoje = new Date();
+    const trintaDiasAtras = new Date();
+    trintaDiasAtras.setDate(hoje.getDate() - 30);
+
+    const formatarData = (d) => d.toISOString().split('T')[0];
+    
+    document.getElementById('data-inicio').value = formatarData(trintaDiasAtras);
+    document.getElementById('data-fim').value = formatarData(hoje);
+    document.getElementById('tipo-relatorio').value = 'completo';
+    
+    // Não aplicar filtros automaticamente - o usuário precisa clicar em "Atualizar"
+    mostrarNotificacao('🔄 Filtros limpos! Clique em "Atualizar" para aplicar.', 'info');
+}
+
+function mostrarModalCarregamento(mensagem = 'Processando...') {
+    document.getElementById('modal-mensagem').textContent = mensagem;
+    const modal = new bootstrap.Modal(document.getElementById('modalCarregamento'));
+    modal.show();
+}
+
+function ocultarModalCarregamento() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalCarregamento'));
+    if (modal) {
+        modal.hide();
+    }
+}
+
+function mostrarNotificacao(mensagem, tipo) {
+    const notificacoesAntigas = document.querySelectorAll('.alert-notificacao');
+    notificacoesAntigas.forEach(notif => notif.remove());
+
+    const alerta = document.createElement('div');
+    alerta.className = `alert alert-${tipo} alert-dismissible fade show alert-notificacao shadow`;
+    alerta.style.position = 'fixed';
+    alerta.style.top = '20px';
+    alerta.style.right = '20px';
+    alerta.style.zIndex = '1060';
+    alerta.style.minWidth = '350px';
+    
+    alerta.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-${tipo === 'success' ? 'check-circle' : tipo === 'warning' ? 'exclamation-triangle' : 'exclamation-circle'} me-2 fs-5"></i>
+            <div class="flex-grow-1">${mensagem}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alerta);
+    
+    setTimeout(() => {
+        if (alerta.parentNode) {
+            alerta.remove();
+        }
+    }, 5000);
+}
+
+// Funções de exportação (simuladas)
+function exportarPDF() { 
+    mostrarModalCarregamento('Gerando relatório em PDF...');
+    setTimeout(() => {
+        ocultarModalCarregamento();
+        mostrarNotificacao('📊 PDF gerado com sucesso!', 'success');
+    }, 2000);
+}
+
+function exportarExcel() { 
+    mostrarModalCarregamento('Gerando relatório em Excel...');
+    setTimeout(() => {
+        ocultarModalCarregamento();
+        mostrarNotificacao('📈 Excel gerado com sucesso!', 'success');
+    }, 2000);
+}
+
+function exportarEstoquePDF() { 
+    mostrarNotificacao('📦 Exportando estoque em PDF...', 'info');
+}
+
+function exportarEstoqueExcel() { 
+    mostrarNotificacao('📦 Exportando estoque em Excel...', 'info');
+}
+
+function exportarVendasPDF() { 
+    mostrarNotificacao('🛒 Exportando vendas em PDF...', 'info');
+}
+
+function exportarVendasExcel() { 
+    mostrarNotificacao('🛒 Exportando vendas em Excel...', 'info');
+}
+
+function exportarMovimentacoesPDF() { 
+    mostrarNotificacao('🔄 Exportando movimentações em PDF...', 'info');
+}
+</script>
+
+<style>
+:root {
+    --purple: #6f42c1;
+    --orange: #fd7e14;
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-success: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+    --gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --gradient-info: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --gradient-danger: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --gradient-purple: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%);
+    --gradient-orange: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+    --gradient-dark: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+}
+
+/* Gradientes para botões */
+.btn-gradient-primary { background: var(--gradient-primary); border: none; color: white; }
+.btn-gradient-success { background: var(--gradient-success); border: none; color: white; }
+.btn-gradient-warning { background: var(--gradient-warning); border: none; color: white; }
+.btn-gradient-info { background: var(--gradient-info); border: none; color: white; }
+.btn-gradient-danger { background: var(--gradient-danger); border: none; color: white; }
+.btn-gradient-purple { background: var(--gradient-purple); border: none; color: white; }
+.btn-gradient-orange { background: var(--gradient-orange); border: none; color: white; }
+.btn-gradient-dark { background: var(--gradient-dark); border: none; color: white; }
+
+.btn-gradient-primary:hover { 
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%); 
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Gradientes para cards */
+.bg-gradient-primary { background: var(--gradient-primary) !important; }
+.bg-gradient-success { background: var(--gradient-success) !important; }
+.bg-gradient-warning { background: var(--gradient-warning) !important; }
+.bg-gradient-info { background: var(--gradient-info) !important; }
+.bg-gradient-danger { background: var(--gradient-danger) !important; }
+.bg-gradient-purple { background: var(--gradient-purple) !important; }
+.bg-gradient-orange { background: var(--gradient-orange) !important; }
+.bg-gradient-dark { background: var(--gradient-dark) !important; }
+
+.text-gradient-primary { background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+/* Cards de estatísticas */
+.card-statistic {
+    border: none;
+    border-radius: 1rem;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.card-statistic:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+}
+
+.card-statistic::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(255,255,255,0.3);
+}
+
+/* Tabs personalizadas */
+.nav-tabs-custom .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-weight: 600;
+    color: #6c757d;
+    padding: 1rem 1.5rem;
+    transition: all 0.3s ease;
+    background: transparent;
+}
+
+.nav-tabs-custom .nav-link.active {
+    border-bottom-color: #667eea;
+    color: #667eea;
+    background: linear-gradient(to bottom, rgba(102, 126, 234, 0.1), transparent);
+}
+
+.nav-tabs-custom .nav-link:hover {
+    border-bottom-color: #dee2e6;
+    color: #495057;
+}
+
+/* Tabelas com cores vivas */
+.table-success thead {
+    background: var(--gradient-success) !important;
+    color: white;
+}
+
+.table-info thead {
+    background: var(--gradient-info) !important;
+    color: white;
+}
+
+.table-warning thead {
+    background: var(--gradient-warning) !important;
+    color: white;
+}
+
+/* Badges vibrantes */
+.badge {
+    font-weight: 600;
+    padding: 0.5em 0.75em;
+}
+
+.bg-primary { background: linear-gradient(135deg, #667eea, #764ba2) !important; }
+.bg-success { background: linear-gradient(135deg, #4ecdc4, #44a08d) !important; }
+.bg-warning { background: linear-gradient(135deg, #f093fb, #f5576c) !important; }
+.bg-info { background: linear-gradient(135deg, #4facfe, #00f2fe) !important; }
+.bg-danger { background: linear-gradient(135deg, #fa709a, #fee140) !important; }
+
+/* Formulários com destaque */
+.form-control-lg {
+    border-radius: 0.75rem;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.form-control-lg:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Sombras e efeitos */
+.shadow-lg {
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
+}
+
+.card {
+    border-radius: 1rem;
+    border: none;
+}
+
+/* Animações */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.alert-notificacao {
+    animation: slideInRight 0.5s ease;
+    border: none;
+    border-radius: 0.75rem;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .nav-tabs-custom .nav-link {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+    }
+    
+    .card-statistic {
+        margin-bottom: 1rem;
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* Melhorias visuais para texto */
+.text-dark {
+    color: #2d3748 !important;
+}
+
+.fw-bold {
+    font-weight: 700 !important;
+}
+
+/* Ícones com cores gradientes */
+.fas.fa-boxes,
+.fas.fa-check-circle,
+.fas.fa-exclamation-triangle,
+.fas.fa-receipt,
+.fas.fa-shopping-cart,
+.fas.fa-dollar-sign {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+</style>
+{% endblock %}

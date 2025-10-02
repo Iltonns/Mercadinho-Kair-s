@@ -1,0 +1,690 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1 text-gradient-primary">
+                        <i class="fas fa-users me-2"></i>Gerenciar Clientes
+                    </h1>
+                    <p class="text-muted mb-0">Gerencie todos os clientes do Mercadinho Kairós</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-gradient-info shadow-sm" onclick="exportarClientes()">
+                        <i class="fas fa-download me-2"></i>Exportar
+                    </button>
+                    <a href="{{ url_for('adicionar_cliente') }}" class="btn btn-gradient-primary shadow-lg">
+                        <i class="fas fa-user-plus me-2"></i>Novo Cliente
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card card-statistic bg-gradient-primary text-white">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-users fa-2x mb-2 text-white"></i>
+                    <h3 class="text-white mb-0">{{ clientes|length }}</h3>
+                    <small>Total de Clientes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card card-statistic bg-gradient-success text-white">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-phone fa-2x mb-2 text-white"></i>
+                    <h3 class="text-white mb-0">{{ clientes|selectattr('telefone')|list|length }}</h3>
+                    <small>Com Telefone</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card card-statistic bg-gradient-info text-white">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-envelope fa-2x mb-2 text-white"></i>
+                    <h3 class="text-white mb-0">{{ clientes|selectattr('email')|list|length }}</h3>
+                    <small>Com Email</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card card-statistic bg-gradient-warning text-white">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-address-card fa-2x mb-2 text-white"></i>
+                    <h3 class="text-white mb-0">{{ clientes|selectattr('cpf_cnpj')|list|length }}</h3>
+                    <small>Com CPF/CNPJ</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros e Busca -->
+    <div class="card border-0 shadow-lg mb-4">
+        <div class="card-header bg-gradient-dark text-white py-3">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros e Busca</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label for="busca-cliente" class="form-label fw-semibold text-dark">
+                        <i class="fas fa-search me-1 text-primary"></i>Buscar Cliente
+                    </label>
+                    <div class="input-group">
+                        <input type="text" class="form-control form-control-lg border-primary" 
+                               id="busca-cliente" 
+                               placeholder="Digite nome, telefone, email ou CPF/CNPJ...">
+                        <button class="btn btn-gradient-primary btn-lg" type="button" id="btn-busca-cliente">
+                            <i class="fas fa-search me-2"></i>Buscar
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-dark">
+                        <i class="fas fa-sliders-h me-1 text-primary"></i>Filtrar por
+                    </label>
+                    <select class="form-select border-primary" id="filtro-tipo">
+                        <option value="todos">Todos os Clientes</option>
+                        <option value="com-telefone">Com Telefone</option>
+                        <option value="com-email">Com Email</option>
+                        <option value="com-cpf">Com CPF/CNPJ</option>
+                    </select>
+                </div>
+            </div>
+            <div id="resultado-busca" class="mt-3"></div>
+        </div>
+    </div>
+
+    <!-- Tabela de Clientes -->
+    <div class="card border-0 shadow-lg">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-dark fw-bold">
+                    <i class="fas fa-list me-2 text-primary"></i>Lista de Clientes
+                    <span class="badge bg-primary ms-2 fs-6" id="total-clientes">{{ clientes|length }}</span>
+                </h5>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary" id="btn-recargar" title="Recarregar lista">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="btn btn-outline-success" onclick="gerarRelatorioClientes()" title="Gerar Relatório">
+                        <i class="fas fa-chart-bar"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if clientes %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped" id="tabela-clientes">
+                    <thead class="table-primary">
+                        <tr>
+                            <th width="25%" class="fw-semibold">Cliente</th>
+                            <th width="15%" class="fw-semibold">Telefone</th>
+                            <th width="20%" class="fw-semibold">Email</th>
+                            <th width="15%" class="fw-semibold">CPF/CNPJ</th>
+                            <th width="15%" class="fw-semibold">Endereço</th>
+                            <th width="10%" class="fw-semibold text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela-clientes">
+                        {% for cliente in clientes %}
+                        <tr class="cliente-item align-middle" 
+                            data-nome="{{ cliente.nome|lower }}" 
+                            data-telefone="{{ cliente.telefone|default('', true)|lower }}"
+                            data-email="{{ cliente.email|default('', true)|lower }}"
+                            data-cpf="{{ cliente.cpf_cnpj|default('', true)|lower }}"
+                            data-endereco="{{ cliente.endereco|default('', true)|lower }}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                            <i class="fas fa-user text-primary"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0 text-dark fw-bold">{{ cliente.nome }}</h6>
+                                        <small class="text-muted">ID: {{ cliente.id }}</small>
+                                        {% if cliente.data_cadastro %}
+                                        <br>
+                                        <small class="text-muted">
+                                            Cadastro: {{ cliente.data_cadastro.strftime('%d/%m/%Y') }}
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if cliente.telefone %}
+                                <span class="fw-semibold text-dark">
+                                    <i class="fas fa-phone me-1 text-success"></i>
+                                    {{ cliente.telefone }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted fst-italic">Não informado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if cliente.email %}
+                                <span class="text-dark">
+                                    <i class="fas fa-envelope me-1 text-info"></i>
+                                    <small>{{ cliente.email }}</small>
+                                </span>
+                                {% else %}
+                                <span class="text-muted fst-italic">Não informado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if cliente.cpf_cnpj %}
+                                <code class="text-dark bg-light px-2 py-1 rounded">
+                                    {{ cliente.cpf_cnpj }}
+                                </code>
+                                {% else %}
+                                <span class="text-muted fst-italic">Não informado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if cliente.endereco %}
+                                <small class="text-muted" data-bs-toggle="tooltip" title="{{ cliente.endereco }}">
+                                    {{ cliente.endereco[:30] }}{% if cliente.endereco|length > 30 %}...{% endif %}
+                                </small>
+                                {% else %}
+                                <span class="text-muted fst-italic">Não informado</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('editar_cliente', id=cliente.id) }}" 
+                                       class="btn btn-outline-primary"
+                                       data-bs-toggle="tooltip" title="Editar Cliente">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-outline-info btn-info-cliente" 
+                                            data-cliente-id="{{ cliente.id }}"
+                                            data-bs-toggle="tooltip" title="Informações">
+                                        <i class="fas fa-info"></i>
+                                    </button>
+                                    <form method="POST" action="{{ url_for('excluir_cliente', id=cliente.id) }}" 
+                                          class="d-inline" 
+                                          onsubmit="return confirmarExclusaoCliente('{{ cliente.nome }}')">
+                                        <button type="submit" class="btn btn-outline-danger"
+                                                data-bs-toggle="tooltip" title="Excluir Cliente">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Informações da Tabela -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="alert alert-light border-0 bg-light mb-0">
+                        <i class="fas fa-info-circle me-2 text-info"></i>
+                        <small class="text-muted">
+                            Mostrando <strong>{{ clientes|length }}</strong> clientes cadastrados
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportarParaExcel()">
+                            <i class="fas fa-file-excel me-1"></i>Exportar Excel
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="exportarParaPDF()">
+                            <i class="fas fa-file-pdf me-1"></i>Exportar PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-user-slash fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted mb-3">Nenhum cliente cadastrado</h4>
+                <p class="text-muted mb-4">Comece adicionando seu primeiro cliente ao sistema</p>
+                <a href="{{ url_for('adicionar_cliente') }}" class="btn btn-gradient-primary btn-lg">
+                    <i class="fas fa-user-plus me-2"></i>Adicionar Primeiro Cliente
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal Informações do Cliente -->
+<div class="modal fade" id="modalInfoCliente" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>Informações do Cliente
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="info-cliente-conteudo">
+                <!-- Conteúdo carregado via JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+                <a href="#" class="btn btn-gradient-primary" id="btn-editar-cliente">
+                    <i class="fas fa-edit me-2"></i>Editar Cliente
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Carregamento -->
+<div class="modal fade" id="modalCarregamento" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-body text-center py-4 bg-gradient-primary text-white rounded">
+                <div class="spinner-border spinner-border-lg text-white mb-3" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <h6 class="text-white">Processando...</h6>
+                <p class="text-white mb-0 opacity-75" id="modal-mensagem">Aguarde</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Variáveis globais
+let todosClientes = [];
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('👥 Inicializando gerenciamento de clientes...');
+    inicializarClientes();
+    configurarEventos();
+});
+
+function configurarEventos() {
+    // Configurar busca
+    const buscaInput = document.getElementById('busca-cliente');
+    const btnBuscar = document.getElementById('btn-busca-cliente');
+    
+    buscaInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            buscarCliente(this.value);
+        }
+    });
+    
+    btnBuscar.addEventListener('click', function() {
+        buscarCliente(buscaInput.value);
+    });
+
+    // Configurar filtro por tipo
+    const filtroTipo = document.getElementById('filtro-tipo');
+    if (filtroTipo) {
+        filtroTipo.addEventListener('change', function() {
+            aplicarFiltroTipo(this.value);
+        });
+    }
+
+    // Configurar botão recarregar
+    document.getElementById('btn-recargar').addEventListener('click', function() {
+        location.reload();
+    });
+
+    // Configurar botões de informação do cliente
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-info-cliente')) {
+            const btn = e.target.closest('.btn-info-cliente');
+            const clienteId = btn.getAttribute('data-cliente-id');
+            carregarInfoCliente(clienteId);
+        }
+    });
+
+    // Ativar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+
+function inicializarClientes() {
+    // Armazenar todos os clientes para filtragem local
+    todosClientes = Array.from(document.querySelectorAll('.cliente-item'));
+    console.log(`👥 ${todosClientes.length} clientes carregados para filtragem`);
+}
+
+// Busca de clientes
+function buscarCliente(termo) {
+    const termoLimpo = termo.trim();
+    
+    if (!termoLimpo) {
+        mostrarTodosClientes();
+        document.getElementById('resultado-busca').innerHTML = '';
+        return;
+    }
+
+    let encontrados = 0;
+    
+    // Oculta todos os clientes
+    todosClientes.forEach(cliente => {
+        cliente.style.display = 'none';
+        cliente.classList.remove('table-success', 'bg-warning', 'bg-opacity-10');
+    });
+    
+    // Busca nos atributos data
+    todosClientes.forEach(cliente => {
+        const nome = cliente.getAttribute('data-nome');
+        const telefone = cliente.getAttribute('data-telefone');
+        const email = cliente.getAttribute('data-email');
+        const cpf = cliente.getAttribute('data-cpf');
+        const endereco = cliente.getAttribute('data-endereco');
+        
+        if (nome.includes(termoLimpo) || telefone.includes(termoLimpo) || 
+            email.includes(termoLimpo) || cpf.includes(termoLimpo) || endereco.includes(termoLimpo)) {
+            cliente.style.display = '';
+            cliente.classList.add('bg-warning', 'bg-opacity-10');
+            encontrados++;
+        }
+    });
+    
+    document.getElementById('total-clientes').textContent = encontrados;
+    
+    if (encontrados === 0) {
+        document.getElementById('resultado-busca').innerHTML = 
+            `<div class="alert alert-warning border-0 bg-warning bg-opacity-10">
+                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                Nenhum cliente encontrado para "<strong>${termoLimpo}</strong>"
+            </div>`;
+    } else {
+        document.getElementById('resultado-busca').innerHTML = 
+            `<div class="alert alert-info border-0 bg-info bg-opacity-10">
+                <i class="fas fa-info-circle me-2 text-info"></i>
+                Encontrados <strong>${encontrados}</strong> cliente(s) para "<strong>${termoLimpo}</strong>"
+            </div>`;
+    }
+}
+
+function aplicarFiltroTipo(tipo) {
+    let visiveis = 0;
+    
+    // Limpa o termo de busca e resultado
+    document.getElementById('busca-cliente').value = '';
+    document.getElementById('resultado-busca').innerHTML = '';
+
+    todosClientes.forEach(cliente => {
+        cliente.classList.remove('table-success', 'bg-warning', 'bg-opacity-10');
+        
+        let mostrar = true;
+        
+        switch(tipo) {
+            case 'com-telefone':
+                mostrar = cliente.getAttribute('data-telefone') !== '';
+                break;
+            case 'com-email':
+                mostrar = cliente.getAttribute('data-email') !== '';
+                break;
+            case 'com-cpf':
+                mostrar = cliente.getAttribute('data-cpf') !== '';
+                break;
+            default: // 'todos'
+                mostrar = true;
+                break;
+        }
+        
+        cliente.style.display = mostrar ? '' : 'none';
+        if (mostrar) visiveis++;
+    });
+    
+    document.getElementById('total-clientes').textContent = visiveis;
+}
+
+function mostrarTodosClientes() {
+    todosClientes.forEach(cliente => {
+        cliente.style.display = '';
+        cliente.classList.remove('table-success', 'bg-warning', 'bg-opacity-10');
+    });
+    document.getElementById('total-clientes').textContent = todosClientes.length;
+}
+
+function carregarInfoCliente(clienteId) {
+    mostrarModalCarregamento('Carregando informações...');
+    
+    // Simulação de carregamento - substitua por chamada real à API
+    setTimeout(() => {
+        ocultarModalCarregamento();
+        
+        // Encontra o cliente na lista
+        const clienteElement = document.querySelector(`.cliente-item[data-cliente-id="${clienteId}"]`);
+        if (!clienteElement) {
+            document.getElementById('info-cliente-conteudo').innerHTML = 
+                '<div class="alert alert-danger">Cliente não encontrado</div>';
+            return;
+        }
+        
+        // Extrai informações do elemento (em produção, busque da API)
+        const nome = clienteElement.querySelector('h6').textContent;
+        const telefone = clienteElement.cells[1].textContent.trim();
+        const email = clienteElement.cells[2].textContent.trim();
+        const cpf = clienteElement.cells[3].textContent.trim();
+        const endereco = clienteElement.cells[4].textContent.trim();
+        
+        const infoHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-primary mb-3">${nome}</h6>
+                    <div class="mb-3">
+                        <strong>ID:</strong> <span class="badge bg-primary">#${clienteId}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Telefone:</strong> 
+                        <span class="fw-semibold ${telefone === 'Não informado' ? 'text-muted' : 'text-success'}">
+                            ${telefone}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Email:</strong> 
+                        <span class="${email === 'Não informado' ? 'text-muted' : 'text-dark'}">
+                            ${email}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <strong>CPF/CNPJ:</strong> 
+                        <span class="${cpf === 'Não informado' ? 'text-muted' : 'text-dark'}">
+                            ${cpf}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Endereço:</strong> 
+                        <span class="${endereco === 'Não informado' ? 'text-muted' : 'text-dark'}">
+                            ${endereco}
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Status:</strong> 
+                        <span class="badge bg-success">Ativo</span>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-12">
+                    <h6 class="text-primary mb-2">Estatísticas do Cliente</h6>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="text-success fw-bold">0</div>
+                                <small class="text-muted">Compras</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="text-warning fw-bold">R$ 0,00</div>
+                                <small class="text-muted">Total Gasto</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="text-info fw-bold">-</div>
+                                <small class="text-muted">Última Compra</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('info-cliente-conteudo').innerHTML = infoHTML;
+        document.getElementById('btn-editar-cliente').href = `/clientes/editar/${clienteId}`;
+        
+        new bootstrap.Modal(document.getElementById('modalInfoCliente')).show();
+    }, 1000);
+}
+
+// Funções auxiliares
+function confirmarExclusaoCliente(nomeCliente) {
+    return confirm(`Tem certeza que deseja excluir o cliente "${nomeCliente}"?\n\nEsta ação não pode ser desfeita!`);
+}
+
+function mostrarModalCarregamento(mensagem = 'Processando...') {
+    document.getElementById('modal-mensagem').textContent = mensagem;
+    const modal = new bootstrap.Modal(document.getElementById('modalCarregamento'));
+    modal.show();
+}
+
+function ocultarModalCarregamento() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalCarregamento'));
+    if (modal) modal.hide();
+}
+
+function exportarClientes() {
+    mostrarNotificacao('📊 Exportando lista de clientes...', 'info');
+}
+
+function gerarRelatorioClientes() {
+    mostrarNotificacao('📈 Gerando relatório de clientes...', 'info');
+}
+
+function exportarParaExcel() {
+    mostrarNotificacao('📊 Exportando para Excel...', 'info');
+}
+
+function exportarParaPDF() {
+    mostrarNotificacao('📄 Exportando para PDF...', 'info');
+}
+
+function mostrarNotificacao(mensagem, tipo) {
+    const notificacoesAntigas = document.querySelectorAll('.alert-notificacao');
+    notificacoesAntigas.forEach(notif => notif.remove());
+
+    const alerta = document.createElement('div');
+    alerta.className = `alert alert-${tipo} alert-dismissible fade show alert-notificacao shadow`;
+    alerta.style.position = 'fixed';
+    alerta.style.top = '20px';
+    alerta.style.right = '20px';
+    alerta.style.zIndex = '1060';
+    alerta.style.minWidth = '350px';
+    
+    alerta.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-${tipo === 'success' ? 'check-circle' : tipo === 'warning' ? 'exclamation-triangle' : 'exclamation-circle'} me-2 fs-5"></i>
+            <div class="flex-grow-1">${mensagem}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alerta);
+    
+    setTimeout(() => {
+        if (alerta.parentNode) {
+            alerta.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<style>
+/* Estilos específicos para a página de clientes */
+.cliente-item {
+    transition: all 0.3s ease;
+}
+
+.cliente-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.table-primary thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white;
+}
+
+.card-statistic {
+    border-radius: 15px;
+    transition: all 0.3s ease;
+}
+
+.card-statistic:hover {
+    transform: translateY(-5px);
+}
+
+.alert-notificacao {
+    animation: slideInRight 0.5s ease;
+    border: none;
+    border-radius: 0.75rem;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .card-statistic {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Efeitos visuais */
+.bg-opacity-10 {
+    background-color: rgba(var(--bs-warning-rgb), 0.1) !important;
+}
+
+.text-gradient-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+}
+
+/* Tooltip personalizado */
+.tooltip {
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,517 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="container text-center text-white">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-3">Bem-vindo, {{ current_user.username }}! 👋</h1>
+                <p class="lead fs-4 mb-4">Sistema de gestão completo do Mercadinho Kairós</p>
+                <div class="d-flex justify-content-center gap-3 flex-wrap">
+                    <span class="badge bg-light text-primary fs-6 p-2">
+                        <i class="fas fa-calendar-day me-1"></i>{{ now.strftime('%d/%m/%Y') }}
+                    </span>
+                    <span class="badge bg-light text-success fs-6 p-2">
+                        <i class="fas fa-clock me-1"></i>{{ now.strftime('%H:%M') }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard Content -->
+<div class="container mt-5">
+    <!-- Estatísticas em Cards com Gradiente -->
+    <div class="row mb-5">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-boxes"></i>
+                <h3>{{ estatisticas.total_produtos or 0 }}</h3>
+                <p>Total de Produtos</p>
+                <div class="stat-trend">
+                    <i class="fas fa-chart-line me-1"></i>
+                    <small>Cadastrados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);">
+                <i class="fas fa-shopping-cart"></i>
+                <h3>{{ estatisticas.total_transacoes or 0 }}</h3>
+                <p>Vendas Realizadas</p>
+                <div class="stat-trend">
+                    <i class="fas fa-receipt me-1"></i>
+                    <small>Transações</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>{{ estatisticas.produtos_estoque_baixo or 0 }}</h3>
+                <p>Estoque Baixo</p>
+                <div class="stat-trend">
+                    <i class="fas fa-bell me-1"></i>
+                    <small>Precisa atenção</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <i class="fas fa-dollar-sign"></i>
+                <h3>R$ {{ "%.2f"|format(estatisticas.valor_estoque or 0) }}</h3>
+                <p>Valor em Estoque</p>
+                <div class="stat-trend">
+                    <i class="fas fa-piggy-bank me-1"></i>
+                    <small>Patrimônio</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Ações Rápidas -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-gradient-primary text-white py-3">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-bolt me-2"></i>Ações Rápidas
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-grid gap-3">
+                        <a href="{{ url_for('caixa') }}" class="btn btn-gradient-primary btn-lg py-3 shadow">
+                            <i class="fas fa-cash-register me-2"></i>Abrir Caixa PDV
+                        </a>
+                        <a href="{{ url_for('adicionar_produto') }}" class="btn btn-gradient-success btn-lg py-3 shadow">
+                            <i class="fas fa-plus me-2"></i>Novo Produto
+                        </a>
+                        <a href="{{ url_for('adicionar_cliente') }}" class="btn btn-gradient-info btn-lg py-3 shadow">
+                            <i class="fas fa-user-plus me-2"></i>Novo Cliente
+                        </a>
+                        <a href="{{ url_for('relatorios') }}" class="btn btn-gradient-warning btn-lg py-3 shadow">
+                            <i class="fas fa-chart-bar me-2"></i>Ver Relatórios
+                        </a>
+                    </div>
+                    
+                    <!-- Divisor -->
+                    <hr class="my-4">
+                    
+                    <!-- Ações Secundárias -->
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="{{ url_for('produtos') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-list me-1"></i>Produtos
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('vendas') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-receipt me-1"></i>Vendas
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('clientes') }}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-users me-1"></i>Clientes
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('produtos_pesaveis') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-weight me-1"></i>Pesáveis
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Produtos Recentes -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-gradient-success text-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-clock me-2"></i>Produtos Recentes
+                        </h5>
+                        <span class="badge bg-light text-dark fs-6">
+                            Últimos {{ produtos_recentes|length }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if produtos_recentes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-success">
+                                <tr>
+                                    <th class="fw-semibold ps-4">Produto</th>
+                                    <th class="fw-semibold text-center">Preço</th>
+                                    <th class="fw-semibold text-center">Estoque</th>
+                                    <th class="fw-semibold text-center">Status</th>
+                                    <th class="fw-semibold text-center pe-4">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for produto in produtos_recentes %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                                <i class="fas fa-box text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <strong class="text-dark">{{ produto.nome }}</strong>
+                                                {% if produto.codigo_barras %}
+                                                <br>
+                                                <small class="text-muted">Cód: {{ produto.codigo_barras }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center fw-bold text-success fs-6">
+                                        R$ {{ "%.2f"|format(produto.preco) }}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="fw-bold fs-6 {% if produto.quantidade > 10 %}text-success{% elif produto.quantidade > 0 %}text-warning{% else %}text-danger{% endif %}">
+                                            {{ produto.quantidade }} un
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if produto.quantidade > 10 %}
+                                        <span class="badge bg-success fs-6">
+                                            <i class="fas fa-check me-1"></i>Disponível
+                                        </span>
+                                        {% elif produto.quantidade > 0 %}
+                                        <span class="badge bg-warning fs-6">
+                                            <i class="fas fa-exclamation me-1"></i>Estoque Baixo
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-danger fs-6">
+                                            <i class="fas fa-times me-1"></i>Esgotado
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('editar_produto', id=produto.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Editar Produto">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('caixa') }}?produto={{ produto.id }}" 
+                                               class="btn btn-outline-success" 
+                                               title="Vender Produto">
+                                                <i class="fas fa-cash-register"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted mb-3">Nenhum produto cadastrado</h5>
+                        <p class="text-muted mb-4">Comece cadastrando seus primeiros produtos</p>
+                        <a href="{{ url_for('adicionar_produto') }}" class="btn btn-gradient-primary btn-lg">
+                            <i class="fas fa-plus me-2"></i>Adicionar Primeiro Produto
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Footer da Tabela -->
+                {% if produtos_recentes %}
+                <div class="card-footer bg-light border-0">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Mostrando os {{ produtos_recentes|length }} produtos mais recentes
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <a href="{{ url_for('produtos') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-list me-1"></i>Ver Todos os Produtos
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Cards Adicionais de Informação -->
+            <div class="row mt-4">
+                <div class="col-md-6 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-4">
+                            <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                            <h5 class="text-primary fw-bold">Performance do Dia</h5>
+                            <p class="text-muted mb-3">Acompanhe o desempenho das vendas</p>
+                            <div class="d-grid">
+                                <a href="{{ url_for('relatorios') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-chart-bar me-2"></i>Ver Métricas
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-4">
+                            <i class="fas fa-bell fa-3x text-warning mb-3"></i>
+                            <h5 class="text-warning fw-bold">Alertas do Sistema</h5>
+                            <p class="text-muted mb-3">
+                                {% if estatisticas.produtos_estoque_baixo > 0 %}
+                                <span class="badge bg-warning me-1">{{ estatisticas.produtos_estoque_baixo }}</span>
+                                produtos com estoque baixo
+                                {% else %}
+                                <span class="text-success">Tudo sob controle! ✅</span>
+                                {% endif %}
+                            </p>
+                            <div class="d-grid">
+                                <a href="{{ url_for('produtos') }}?filter=estoque_baixo" class="btn btn-outline-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Ver Alertas
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSS Adicional para o Dashboard -->
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 80px 0 60px;
+    margin-bottom: 40px;
+    border-radius: 0 0 40px 40px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="rgba(255,255,255,0.1)"><polygon points="1000,0 1000,100 0,100"/></svg>');
+    background-size: cover;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    border-radius: 20px;
+    color: white;
+    margin-bottom: 1rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    z-index: 1;
+}
+
+.stat-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+.stat-card i {
+    font-size: 3.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 2;
+    opacity: 0.9;
+}
+
+.stat-card h3 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    font-weight: 800;
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-card p {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    position: relative;
+    z-index: 2;
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+.stat-trend {
+    position: relative;
+    z-index: 2;
+    opacity: 0.8;
+    font-size: 0.9rem;
+}
+
+/* Cards de ação rápida */
+.btn-gradient-primary, .btn-gradient-success, .btn-gradient-info, .btn-gradient-warning {
+    font-weight: 600;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-gradient-primary::before, .btn-gradient-success::before, .btn-gradient-info::before, .btn-gradient-warning::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-gradient-primary:hover::before, .btn-gradient-success:hover::before, .btn-gradient-info:hover::before, .btn-gradient-warning:hover::before {
+    left: 100%;
+}
+
+/* Tabela de produtos */
+.table > :not(caption) > * > * {
+    padding: 1rem 0.5rem;
+}
+
+.table-success thead {
+    background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%) !important;
+}
+
+/* Badges animados */
+.badge {
+    font-weight: 600;
+    padding: 0.6em 1em;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.badge:hover {
+    transform: scale(1.05);
+}
+
+/* Cards informativos adicionais */
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 60px 0 40px;
+        border-radius: 0 0 30px 30px;
+    }
+    
+    .hero-section h1 {
+        font-size: 2.5rem;
+    }
+    
+    .stat-card {
+        padding: 2rem 1rem;
+    }
+    
+    .stat-card h3 {
+        font-size: 2.5rem;
+    }
+    
+    .stat-card i {
+        font-size: 2.5rem;
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
+}
+
+/* Animações de entrada */
+.fade-in-up {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Efeito de brilho nos cards de estatística */
+.stat-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+    transform: rotate(45deg);
+    transition: all 0.6s ease;
+    opacity: 0;
+}
+
+.stat-card:hover::after {
+    opacity: 1;
+    transform: rotate(45deg) translate(10%, 10%);
+}
+</style>
+
+<!-- Script para animações -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Anima os cards de estatística sequencialmente
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach((card, index) => {
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 200);
+    });
+    
+    // Adiciona efeito de digitação no título
+    const heroTitle = document.querySelector('.hero-section h1');
+    if (heroTitle) {
+        heroTitle.style.opacity = '0';
+        heroTitle.style.transform = 'translateY(20px)';
+        heroTitle.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+        
+        setTimeout(() => {
+            heroTitle.style.opacity = '1';
+            heroTitle.style.transform = 'translateY(0)';
+        }, 300);
+    }
+});
+</script>
+{% endblock %}

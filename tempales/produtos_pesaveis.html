@@ -1,0 +1,719 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1 text-gradient-primary">
+                        <i class="fas fa-weight me-2"></i>Produtos Pesáveis
+                    </h1>
+                    <p class="text-muted mb-0">Gerencie produtos vendidos por peso (kg) no sistema</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('produtos') }}" class="btn btn-gradient-info shadow-sm">
+                        <i class="fas fa-boxes me-2"></i>Ver Todos Produtos
+                    </a>
+                    <a href="{{ url_for('adicionar_produto_pesavel') }}" class="btn btn-gradient-success shadow-lg">
+                        <i class="fas fa-plus me-2"></i>Novo Produto Pesável
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card card-statistic bg-gradient-warning text-white">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-weight fa-2x mb-2 text-white"></i>
+                    <h3 class="text-white mb-0">{{ produtos|length }}</h3>
+                    <small>Total Pesáveis</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card card-statistic bg-gradient-success text-white">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-dollar-sign fa-2x mb-2 text-white"></i>
+                    <h4 class="text-white mb-0">R$ {{ "%.2f"|format(preco_medio_kg) }}</h4>
+                    <small>Preço Médio/Kg</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card card-statistic bg-gradient-info text-white">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-tags fa-2x mb-2 text-white"></i>
+                    <h3 class="text-white mb-0">{{ produtos_ativos }}</h3>
+                    <small>Produtos Ativos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card card-statistic bg-gradient-purple text-white">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-chart-line fa-2x mb-2 text-white"></i>
+                    <h4 class="text-white mb-0">{{ produtos_recentes }}</h4>
+                    <small>Cadastrados (30d)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros e Busca -->
+    <div class="card border-0 shadow-lg mb-4">
+        <div class="card-header bg-gradient-warning text-white py-3">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros e Busca</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label for="busca-pesavel" class="form-label fw-semibold text-dark">
+                        <i class="fas fa-search me-1 text-warning"></i>Buscar Produto Pesável
+                    </label>
+                    <div class="input-group">
+                        <input type="text" class="form-control form-control-lg border-warning" 
+                               id="busca-pesavel" 
+                               placeholder="Digite nome do produto ou código personalizado...">
+                        <button class="btn btn-gradient-warning btn-lg" type="button" id="btn-busca-pesavel">
+                            <i class="fas fa-search me-2"></i>Buscar
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-dark">
+                        <i class="fas fa-sort me-1 text-warning"></i>Ordenar por
+                    </label>
+                    <select class="form-select border-warning" id="ordenar-pesaveis">
+                        <option value="nome">Nome (A-Z)</option>
+                        <option value="preco_asc">Preço (Menor-Maior)</option>
+                        <option value="preco_desc">Preço (Maior-Menor)</option>
+                        <option value="recente">Mais Recentes</option>
+                    </select>
+                </div>
+            </div>
+            <div id="resultado-busca-pesaveis" class="mt-3"></div>
+        </div>
+    </div>
+
+    <!-- Tabela de Produtos Pesáveis -->
+    <div class="card border-0 shadow-lg">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-dark fw-bold">
+                    <i class="fas fa-list me-2 text-warning"></i>Lista de Produtos Pesáveis
+                    <span class="badge bg-warning ms-2 fs-6" id="total-pesaveis">{{ produtos|length }}</span>
+                </h5>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary" id="btn-recargar-pesaveis" title="Recarregar lista">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="btn btn-outline-success" onclick="exportarPesaveisExcel()" title="Exportar Excel">
+                        <i class="fas fa-file-excel"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if produtos %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped" id="tabela-pesaveis">
+                    <thead class="table-warning">
+                        <tr>
+                            <th width="30%" class="fw-semibold">Produto</th>
+                            <th width="20%" class="fw-semibold">Código Personalizado</th>
+                            <th width="15%" class="fw-semibold text-center">Preço por KG</th>
+                            <th width="15%" class="fw-semibold text-center">Status</th>
+                            <th width="20%" class="fw-semibold text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela-pesaveis">
+                        {% for produto in produtos %}
+                        <tr class="pesavel-item align-middle" 
+                            data-nome="{{ produto.nome|lower }}" 
+                            data-codigo="{{ produto.codigo_personalizado|default('', true)|lower }}"
+                            data-preco="{{ produto.preco_por_kg }}"
+                            data-id="{{ produto.id }}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
+                                            <i class="fas fa-weight text-warning"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0 text-dark fw-bold">{{ produto.nome }}</h6>
+                                        <small class="text-muted">
+                                            ID: {{ produto.id }}
+                                            {% if produto.categoria %}
+                                             • {{ produto.categoria }}
+                                            {% endif %}
+                                        </small>
+                                        {% if produto.descricao %}
+                                        <br>
+                                        <small class="text-muted">{{ produto.descricao[:50] }}{% if produto.descricao|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <code class="text-dark bg-light px-2 py-1 rounded fw-bold">
+                                    {{ produto.codigo_personalizado or 'N/A' }}
+                                </code>
+                                {% if produto.codigo_barras %}
+                                <br>
+                                <small class="text-muted">Original: {{ produto.codigo_barras }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="fw-bold text-success fs-5">
+                                    R$ {{ "%.2f"|format(produto.preco_por_kg) }}
+                                </span>
+                                <br>
+                                <small class="text-muted">por quilograma</small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success fs-6">
+                                    <i class="fas fa-check me-1"></i>Ativo
+                                </span>
+                                <br>
+                                <small class="text-muted">
+                                    {% if produto.data_criacao %}
+                                    {{ produto.data_criacao.strftime('%d/%m/%Y') }}
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('editar_produto_pesavel', id=produto.id) }}" 
+                                       class="btn btn-outline-primary"
+                                       data-bs-toggle="tooltip" title="Editar Produto Pesável">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="btn btn-outline-info btn-info-pesavel" 
+                                            data-produto-id="{{ produto.id }}"
+                                            data-bs-toggle="tooltip" title="Informações Detalhadas">
+                                        <i class="fas fa-info"></i>
+                                    </button>
+                                    <a href="{{ url_for('caixa') }}?produto={{ produto.id }}" 
+                                       class="btn btn-outline-success"
+                                       data-bs-toggle="tooltip" title="Vender Produto">
+                                        <i class="fas fa-cash-register"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('excluir_produto_pesavel', id=produto.id) }}" 
+                                          class="d-inline" 
+                                          onsubmit="return confirmarDesassociacao('{{ produto.nome }}')">
+                                        <button type="submit" class="btn btn-outline-danger"
+                                                data-bs-toggle="tooltip" title="Desassociar Pesável">
+                                            <i class="fas fa-unlink"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Informações da Tabela -->
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="alert alert-light border-0 bg-light mb-0">
+                        <i class="fas fa-info-circle me-2 text-warning"></i>
+                        <small class="text-muted">
+                            Mostrando <strong>{{ produtos|length }}</strong> produtos pesáveis cadastrados
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportarPesaveisExcel()">
+                            <i class="fas fa-file-excel me-1"></i>Exportar Excel
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="exportarPesaveisPDF()">
+                            <i class="fas fa-file-pdf me-1"></i>Exportar PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-weight fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted mb-3">Nenhum produto pesável cadastrado</h4>
+                <p class="text-muted mb-4">Comece associando produtos para venda por peso</p>
+                <a href="{{ url_for('adicionar_produto_pesavel') }}" class="btn btn-gradient-warning btn-lg">
+                    <i class="fas fa-plus me-2"></i>Associar Primeiro Pesável
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Informações Importantes -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card border-warning border-2">
+                <div class="card-header bg-warning bg-opacity-10">
+                    <h6 class="mb-0 text-warning fw-bold">
+                        <i class="fas fa-lightbulb me-2"></i>Como Funciona?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Produtos pesáveis são vendidos por peso (kg)</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Use códigos personalizados para identificação rápida</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>O sistema calcula automaticamente o valor baseado no peso</small>
+                        </li>
+                        <li>
+                            <i class="fas fa-check text-success me-2"></i>
+                            <small>Desassociar mantém o produto original no sistema</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-info border-2">
+                <div class="card-header bg-info bg-opacity-10">
+                    <h6 class="mb-0 text-info fw-bold">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dicas Rápidas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-barcode text-info me-2"></i>
+                            <small>Use códigos curtos para agilizar as vendas</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-dollar-sign text-info me-2"></i>
+                            <small>Ajuste preços conforme custo e concorrência</small>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-balance-scale text-info me-2"></i>
+                            <small>Mantenha a balança calibrada para precisão</small>
+                        </li>
+                        <li>
+                            <i class="fas fa-chart-line text-info me-2"></i>
+                            <small>Monitore produtos mais vendidos por peso</small>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Informações do Produto Pesável -->
+<div class="modal fade" id="modalInfoPesavel" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-warning text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>Informações do Produto Pesável
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="info-pesavel-conteudo">
+                <!-- Conteúdo carregado via JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+                <a href="#" class="btn btn-gradient-warning" id="btn-editar-pesavel">
+                    <i class="fas fa-edit me-2"></i>Editar Pesável
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Carregamento -->
+<div class="modal fade" id="modalCarregamento" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-body text-center py-4 bg-gradient-warning text-white rounded">
+                <div class="spinner-border spinner-border-lg text-white mb-3" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <h6 class="text-white">Processando...</h6>
+                <p class="text-white mb-0 opacity-75" id="modal-mensagem">Aguarde</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Variáveis globais
+let todosPesaveis = [];
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('⚖️ Inicializando gerenciamento de produtos pesáveis...');
+    inicializarPesaveis();
+    configurarEventosPesaveis();
+});
+
+function configurarEventosPesaveis() {
+    // Configurar busca
+    const buscaInput = document.getElementById('busca-pesavel');
+    const btnBuscar = document.getElementById('btn-busca-pesavel');
+    
+    buscaInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            buscarPesavel(this.value);
+        }
+    });
+    
+    btnBuscar.addEventListener('click', function() {
+        buscarPesavel(buscaInput.value);
+    });
+
+    // Configurar ordenação
+    const ordenarSelect = document.getElementById('ordenar-pesaveis');
+    if (ordenarSelect) {
+        ordenarSelect.addEventListener('change', function() {
+            ordenarPesaveis(this.value);
+        });
+    }
+
+    // Configurar botão recarregar
+    document.getElementById('btn-recargar-pesaveis').addEventListener('click', function() {
+        location.reload();
+    });
+
+    // Configurar botões de informação
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-info-pesavel')) {
+            const btn = e.target.closest('.btn-info-pesavel');
+            const produtoId = btn.getAttribute('data-produto-id');
+            carregarInfoPesavel(produtoId);
+        }
+    });
+
+    // Ativar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+
+function inicializarPesaveis() {
+    // Armazenar todos os pesáveis para filtragem local
+    todosPesaveis = Array.from(document.querySelectorAll('.pesavel-item'));
+    console.log(`⚖️ ${todosPesaveis.length} produtos pesáveis carregados para filtragem`);
+}
+
+// Busca de produtos pesáveis
+function buscarPesavel(termo) {
+    const termoLimpo = termo.trim();
+    
+    if (!termoLimpo) {
+        mostrarTodosPesaveis();
+        document.getElementById('resultado-busca-pesaveis').innerHTML = '';
+        return;
+    }
+
+    let encontrados = 0;
+    
+    // Oculta todos os pesáveis
+    todosPesaveis.forEach(pesavel => {
+        pesavel.style.display = 'none';
+        pesavel.classList.remove('table-success', 'bg-warning', 'bg-opacity-10');
+    });
+    
+    // Busca nos atributos data
+    todosPesaveis.forEach(pesavel => {
+        const nome = pesavel.getAttribute('data-nome');
+        const codigo = pesavel.getAttribute('data-codigo');
+        
+        if (nome.includes(termoLimpo) || codigo.includes(termoLimpo)) {
+            pesavel.style.display = '';
+            pesavel.classList.add('bg-warning', 'bg-opacity-10');
+            encontrados++;
+        }
+    });
+    
+    document.getElementById('total-pesaveis').textContent = encontrados;
+    
+    if (encontrados === 0) {
+        document.getElementById('resultado-busca-pesaveis').innerHTML = 
+            `<div class="alert alert-warning border-0 bg-warning bg-opacity-10">
+                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                Nenhum produto pesável encontrado para "<strong>${termoLimpo}</strong>"
+            </div>`;
+    } else {
+        document.getElementById('resultado-busca-pesaveis').innerHTML = 
+            `<div class="alert alert-info border-0 bg-info bg-opacity-10">
+                <i class="fas fa-info-circle me-2 text-info"></i>
+                Encontrados <strong>${encontrados}</strong> produto(s) pesável(is) para "<strong>${termoLimpo}</strong>"
+            </div>`;
+    }
+}
+
+function ordenarPesaveis(criterio) {
+    const tbody = document.getElementById('corpo-tabela-pesaveis');
+    const linhas = Array.from(tbody.querySelectorAll('.pesavel-item'));
+    
+    linhas.sort((a, b) => {
+        switch(criterio) {
+            case 'nome':
+                return a.getAttribute('data-nome').localeCompare(b.getAttribute('data-nome'));
+            case 'preco_asc':
+                return parseFloat(a.getAttribute('data-preco')) - parseFloat(b.getAttribute('data-preco'));
+            case 'preco_desc':
+                return parseFloat(b.getAttribute('data-preco')) - parseFloat(a.getAttribute('data-preco'));
+            case 'recente':
+                // Ordem de inserção (mantém a ordem atual)
+                return 0;
+            default:
+                return 0;
+        }
+    });
+    
+    // Reordenar as linhas na tabela
+    linhas.forEach(linha => tbody.appendChild(linha));
+    
+    mostrarNotificacao(`📊 Produtos ordenados por ${criterio.replace('_', ' ')}`, 'info');
+}
+
+function mostrarTodosPesaveis() {
+    todosPesaveis.forEach(pesavel => {
+        pesavel.style.display = '';
+        pesavel.classList.remove('table-success', 'bg-warning', 'bg-opacity-10');
+    });
+    document.getElementById('total-pesaveis').textContent = todosPesaveis.length;
+}
+
+function carregarInfoPesavel(produtoId) {
+    mostrarModalCarregamento('Carregando informações...');
+    
+    // Simulação de carregamento - substitua por chamada real à API
+    setTimeout(() => {
+        ocultarModalCarregamento();
+        
+        // Encontra o pesável na lista
+        const pesavelElement = document.querySelector(`.pesavel-item[data-id="${produtoId}"]`);
+        if (!pesavelElement) {
+            document.getElementById('info-pesavel-conteudo').innerHTML = 
+                '<div class="alert alert-danger">Produto pesável não encontrado</div>';
+            return;
+        }
+        
+        // Extrai informações do elemento
+        const nome = pesavelElement.querySelector('h6').textContent;
+        const codigo = pesavelElement.cells[1].querySelector('code').textContent;
+        const preco = pesavelElement.cells[2].querySelector('.fs-5').textContent;
+        
+        const infoHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-warning mb-3">${nome}</h6>
+                    <div class="mb-3">
+                        <strong>ID:</strong> <span class="badge bg-warning">#${produtoId}</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Código Personalizado:</strong> 
+                        <code class="bg-light px-2 py-1 rounded fw-bold">${codigo}</code>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Preço por KG:</strong> 
+                        <span class="fw-bold text-success fs-5">${preco}</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <strong>Tipo:</strong> 
+                        <span class="badge bg-warning fs-6">
+                            <i class="fas fa-weight me-1"></i>Produto Pesável
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Status:</strong> 
+                        <span class="badge bg-success fs-6">Ativo</span>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Unidade:</strong> 
+                        <span class="text-dark">Quilograma (kg)</span>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-12">
+                    <h6 class="text-warning mb-2">Vendas e Estatísticas</h6>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="text-success fw-bold">0</div>
+                                <small class="text-muted">Vendas (30d)</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="text-warning fw-bold">0 kg</div>
+                                <small class="text-muted">Total Vendido</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border rounded p-2">
+                                <div class="text-info fw-bold">R$ 0,00</div>
+                                <small class="text-muted">Faturamento</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('info-pesavel-conteudo').innerHTML = infoHTML;
+        document.getElementById('btn-editar-pesavel').href = `/produtos_pesaveis/editar/${produtoId}`;
+        
+        new bootstrap.Modal(document.getElementById('modalInfoPesavel')).show();
+    }, 1000);
+}
+
+// Funções auxiliares
+function confirmarDesassociacao(nomeProduto) {
+    return confirm(`Tem certeza que deseja desassociar o produto pesável "${nomeProduto}"?\n\nO produto base continuará disponível no sistema.`);
+}
+
+function mostrarModalCarregamento(mensagem = 'Processando...') {
+    document.getElementById('modal-mensagem').textContent = mensagem;
+    const modal = new bootstrap.Modal(document.getElementById('modalCarregamento'));
+    modal.show();
+}
+
+function ocultarModalCarregamento() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalCarregamento'));
+    if (modal) modal.hide();
+}
+
+function exportarPesaveisExcel() {
+    mostrarNotificacao('📊 Exportando produtos pesáveis para Excel...', 'info');
+}
+
+function exportarPesaveisPDF() {
+    mostrarNotificacao('📄 Exportando produtos pesáveis para PDF...', 'info');
+}
+
+function mostrarNotificacao(mensagem, tipo) {
+    const notificacoesAntigas = document.querySelectorAll('.alert-notificacao');
+    notificacoesAntigas.forEach(notif => notif.remove());
+
+    const alerta = document.createElement('div');
+    alerta.className = `alert alert-${tipo} alert-dismissible fade show alert-notificacao shadow`;
+    alerta.style.position = 'fixed';
+    alerta.style.top = '20px';
+    alerta.style.right = '20px';
+    alerta.style.zIndex = '1060';
+    alerta.style.minWidth = '350px';
+    
+    alerta.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-${tipo === 'success' ? 'check-circle' : tipo === 'warning' ? 'exclamation-triangle' : 'exclamation-circle'} me-2 fs-5"></i>
+            <div class="flex-grow-1">${mensagem}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alerta);
+    
+    setTimeout(() => {
+        if (alerta.parentNode) {
+            alerta.remove();
+        }
+    }, 5000);
+}
+</script>
+
+<style>
+/* Estilos específicos para a página de produtos pesáveis */
+.pesavel-item {
+    transition: all 0.3s ease;
+}
+
+.pesavel-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.table-warning thead {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+    color: white;
+}
+
+.card-statistic {
+    border-radius: 15px;
+    transition: all 0.3s ease;
+}
+
+.card-statistic:hover {
+    transform: translateY(-5px);
+}
+
+.alert-notificacao {
+    animation: slideInRight 0.5s ease;
+    border: none;
+    border-radius: 0.75rem;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .card-statistic {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Efeitos visuais */
+.bg-opacity-10 {
+    background-color: rgba(var(--bs-warning-rgb), 0.1) !important;
+}
+
+.text-gradient-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+}
+
+/* Destaque para produtos pesáveis */
+.border-warning {
+    border-color: #f39c12 !important;
+}
+</style>
+{% endblock %}

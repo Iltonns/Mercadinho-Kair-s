@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <div class="card mb-4">
+                <div class="card-header pb-0">
+                    <h6><i class="fas fa-link me-2"></i> Associar Produto Base a Pesável</h6>
+                    <p class="text-sm mb-0">Use esta tela para definir o código que será usado na balança/caixa para produtos por peso.</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('adicionar_produto_pesavel') }}">
+                        
+                        {% if produtos_base %}
+                        <div class="mb-3">
+                            <label for="produto_id" class="form-label">Selecione o Produto Base</label>
+                            <select class="form-select" id="produto_id" name="produto_id" required>
+                                <option value="" disabled selected>-- Selecione um produto --</option>
+                                {% for produto in produtos_base %}
+                                <option value="{{ produto.id }}">
+                                    {{ produto.nome }} (Preço: R$ {{ "%.2f" | format(produto.preco) }}/Kg)
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                **Importante:** O preço que será usado é o já cadastrado para este produto.
+                            </div>
+                        </div>
+
+                        <!-- Campo para Código Personalizado -->
+                        <div class="mb-3">
+                            <label for="codigo_personalizado" class="form-label"><i class="fas fa-tag me-1"></i> Código Personalizado (SKU da Balança)</label>
+                            <input type="number" class="form-control" id="codigo_personalizado" name="codigo_personalizado" 
+                                   placeholder="Ex: 101" required min="1" step="1">
+                            <div class="form-text">
+                                Este código será digitado no caixa para buscar o produto pesável. Deve ser um código **único**.
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i> Salvar Associação</button>
+                        {% else %}
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Não há produtos base para serem associados. Cadastre o produto (com o preço por KG) primeiro na tela "Adicionar Produto".
+                        </div>
+                        <a href="{{ url_for('produtos_pesaveis') }}" class="btn btn-primary">Voltar para a lista</a>
+                        {% endif %}
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
