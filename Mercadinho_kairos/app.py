@@ -15,7 +15,6 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 import Mercadinho_kairos.logica_banco as db
-from Mercadinho_kairos.logica_banco import buscar_produto_por_codigo_personalizado
 
 # ==============================================================================
 # 2. CONFIGURAÇÃO INICIAL
@@ -524,19 +523,44 @@ def buscar_produto_caixa():
         print(f"Erro ao buscar produto no caixa: {e}")
         return jsonify({'erro': 'Erro interno ao buscar produto.'}), 500
 
+# ... Linha 304
 @app.route('/caixa/buscar_auto', methods=['POST'])
 @login_required
 def buscar_produto_caixa_auto():
     try:
-        termo = request.form.get('codigo')
-        produto = buscar_produto_por_codigo_personalizado(termo)
-        if produto:
-            return jsonify({'success': True, 'produto': produto})
-        else:
-            return jsonify({'success': False, 'message': 'Produto não encontrado'})
+        # Espera JSON do frontend
+        dados = request.get_json() 
+        if not dados:
+            return jsonify({'success': False, 'message': 'Dados inválidos'})
+
+        termo = sanitizar_input(dados.get('codigo', ''))
+        
+        # 1. Tenta busca por código de barras, personalizado ou ID (busca exata/pesável)
+        produto_exato = db.buscar_produto_por_codigo(termo) 
+        
+        if produto_exato:
+            # Retorna o produto, permitindo que o frontend decida se abre o modal de peso (se 'pesavel' for True)
+            return jsonify({
+                'success': True,
+                'produto': produto_exato,
+                'pesavel': produto_exato.get('pesavel', False),
+                'adicionar_carrinho': not produto_exato.get('pesavel', False) # Adiciona diretamente se não for pesável
+            })
+        
+        # 2. Se não encontrou exato, tenta busca por nome (lista de resultados)
+        produtos_encontrados = db.buscar_produtos_por_nome(termo)
+        if produtos_encontrados:
+             return jsonify({
+                'success': True, 
+                'produtos': produtos_encontrados,
+                'message': f'{len(produtos_encontrados)} produtos encontrados'
+            })
+            
+        return jsonify({'success': False, 'message': 'Produto não encontrado'})
+        
     except Exception as e:
         print(f"Erro na busca automática: {e}")
-        return jsonify({'success': False, 'message': 'Erro interno na busca'})
+        return jsonify({'success': False, 'message': 'Erro interno na busca'}), 500 # Retorna 500 em caso de erro.
 
 
 # Rota para listagem e gerenciamento de Produtos Pesáveis
@@ -544,7 +568,26 @@ def buscar_produto_caixa_auto():
 @login_required
 def produtos_pesaveis():
     produtos = db.listar_produtos_pesaveis()
-    return render_template('produtos_pesaveis.html', produtos=produtos)
+
+    # Corrigido: acesso por chave, não atributo
+    if produtos:
+        preco_medio_kg = sum(p['preco_por_kg'] for p in produtos) / len(produtos)
+    else:
+        preco_medio_kg = 0.0
+
+    produtos_ativos = sum(1 for p in produtos if p.get('ativo', True))
+    produtos_recentes = sum(
+        1 for p in produtos
+        if p.get('data_criacao') and (datetime.now() - p['data_criacao']).days <= 30
+    )
+
+    return render_template(
+        'produtos_pesaveis.html',
+        produtos=produtos,
+        preco_medio_kg=preco_medio_kg,
+        produtos_ativos=produtos_ativos,
+        produtos_recentes=produtos_recentes
+    )
 
 # Rota para o formulário de adição de Produto Pesável
 @app.route('/produtos_pesaveis/adicionar', methods=['GET', 'POST'])
@@ -594,7 +637,32 @@ def excluir_produto_pesavel(id):
     else:
         flash(mensagem, 'danger')
     return redirect(url_for('produtos_pesaveis'))
-      
+
+@app.route('/produtos_pesaveis/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_produto_pesavel(id):
+    produto_pesavel = db.buscar_produto_pesavel_por_id(id)
+    if not produto_pesavel:
+        flash('Produto pesável não encontrado.', 'danger')
+        return redirect(url_for('produtos_pesaveis'))
+
+    if request.method == 'POST':
+        try:
+            preco_por_kg = request.form.get('preco_por_kg')
+            codigo_personalizado = request.form.get('codigo_personalizado')
+            # Adapte conforme os campos que podem ser editados
+
+            sucesso, mensagem = db.atualizar_produto_pesavel(id, preco_por_kg, codigo_personalizado)
+            if sucesso:
+                flash('Produto pesável atualizado com sucesso!', 'success')
+                return redirect(url_for('produtos_pesaveis'))
+            else:
+                flash(mensagem, 'danger')
+        except Exception as e:
+            print(f"Erro ao editar produto pesável: {e}")
+            flash('Erro ao editar produto pesável.', 'danger')
+
+    return render_template('produto_pesavel_formulario.html', produto_pesavel=produto_pesavel)
 
 # ==============================================================================
 # 9. ROTAS DE CLIENTES
@@ -748,6 +816,7 @@ def vendas():
              
         # Retorna com valores seguros
         return render_template('vendas.html', vendas=[], clientes=clientes, total_vendas_valor=0.0) # GARANTE CONTEXTO SEGURO
+
 @app.route('/caixa')
 @login_required
 def caixa():
@@ -772,65 +841,39 @@ def caixa():
 @app.route('/caixa/finalizar', methods=['POST'])
 @login_required
 def finalizar_venda():
-    """Finalizar venda via AJAX - VERSÃO CORRIGIDA"""
-    try:
-        # Verifica se é JSON
-        if request.is_json:
-            dados = request.get_json()
-        else:
-            # Fallback para form data
-            dados = request.form.to_dict()
-            # Converte itens do carrinho se necessário
-            if 'itens' in dados:
-                import json
-                dados['itens'] = json.loads(dados['itens'])
-        
-        print(f"DEBUG: Dados recebidos para venda: {dados}")
-        
-        if not dados or 'itens' not in dados or not dados['itens']:
-            return jsonify({'success': False, 'message': 'Carrinho vazio'}), 400
-        
-        itens_carrinho = dados.get('itens', [])
-        total_venda = float(dados.get('total', 0))
-        
-        forma_pagamento = dados.get('forma_pagamento', 'dinheiro')
-        valor_pago = float(dados.get('valor_pago', total_venda))
-        troco = float(dados.get('troco', 0))
+    # Exemplo de leitura segura do JSON:
+    dados = request.get_json()
+    if not dados:
+        return jsonify({'success': False, 'mensagem': 'Dados não recebidos!'}), 400
 
-        # Converte cliente_id para None se estiver vazio
-        cliente_id = dados.get('cliente_id')
-        if cliente_id == '' or cliente_id == 'null' or not cliente_id:
-            cliente_id = None
-        elif cliente_id:
-            cliente_id = int(cliente_id)
-        
-        print(f"DEBUG: Registrando venda - Itens: {len(itens_carrinho)}, Total: {total_venda}")
-        
-        venda_id, mensagem = db.registrar_venda_completa(
-            cliente_id=cliente_id,
-            itens_carrinho=itens_carrinho,
-            total=total_venda,
-            forma_pagamento=forma_pagamento,
-            valor_pago=valor_pago,
-            troco=troco
-        )
-        
-        if venda_id:
-            return jsonify({
-                'success': True,
-                'message': 'Venda finalizada com sucesso!',
-                'venda_id': venda_id
-            })
-        else:
-            return jsonify({'success': False, 'message': mensagem}), 400
-            
-    except Exception as e:
-        print(f"Erro ao finalizar venda: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'message': f'Erro interno: {str(e)}'}), 500
+    # Pegue os campos esperados do JSON
+    cliente_id = dados.get('cliente_id')
+    itens_carrinho = dados.get('itens')
+    total_venda = dados.get('total')
+    forma_pagamento = dados.get('forma_pagamento')
+    valor_pago = dados.get('valor_pago')
+    troco = dados.get('troco')
 
-            
+    # Valide os campos obrigatórios
+    if not itens_carrinho or total_venda is None or forma_pagamento is None:
+        return jsonify({'success': False, 'mensagem': 'Campos obrigatórios faltando!'}), 400
+
+    # Chame a função de registrar venda
+    venda_id, mensagem = db.registrar_venda_completa(
+        cliente_id=cliente_id,
+        itens_carrinho=itens_carrinho,
+        total=total_venda,
+        forma_pagamento=forma_pagamento,
+        valor_pago=valor_pago,
+        troco=troco
+    )
+
+    if venda_id:
+        return jsonify({'success': True, 'mensagem': mensagem, 'venda_id': venda_id})
+    else:
+        return jsonify({'success': False, 'mensagem': mensagem}), 500
+
+# As outras rotas permanecem iguais, pois não afetam o erro principal
 @app.route('/debug/vendas-detalhado')
 @login_required
 def debug_vendas_detalhado():

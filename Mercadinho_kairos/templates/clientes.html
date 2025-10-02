@@ -24,46 +24,6 @@
         </div>
     </div>
 
-    <!-- Cards de Estatísticas -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card card-statistic bg-gradient-primary text-white">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-users fa-2x mb-2 text-white"></i>
-                    <h3 class="text-white mb-0">{{ clientes|length }}</h3>
-                    <small>Total de Clientes</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card card-statistic bg-gradient-success text-white">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-phone fa-2x mb-2 text-white"></i>
-                    <h3 class="text-white mb-0">{{ clientes|selectattr('telefone')|list|length }}</h3>
-                    <small>Com Telefone</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card card-statistic bg-gradient-info text-white">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-envelope fa-2x mb-2 text-white"></i>
-                    <h3 class="text-white mb-0">{{ clientes|selectattr('email')|list|length }}</h3>
-                    <small>Com Email</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card card-statistic bg-gradient-warning text-white">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-address-card fa-2x mb-2 text-white"></i>
-                    <h3 class="text-white mb-0">{{ clientes|selectattr('cpf_cnpj')|list|length }}</h3>
-                    <small>Com CPF/CNPJ</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Filtros e Busca -->
     <div class="card border-0 shadow-lg mb-4">
         <div class="card-header bg-gradient-dark text-white py-3">

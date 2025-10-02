@@ -780,46 +780,52 @@ def excluir_cliente(id):
 # ==============================================================================
 # 9. FUNÇÕES DE VENDAS (PDV)
 # ==============================================================================
-def registrar_venda_completa(self, cliente_id, itens_carrinho, total, forma_pagamento, valor_pago, troco):
+# ...existing code...
+def registrar_venda_completa(cliente_id, itens_carrinho, total, forma_pagamento, valor_pago, troco):
     """Registrar venda completa no banco de dados"""
+    conn = None
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
         # 1. Registrar a venda principal
         query_venda = """
         INSERT INTO vendas (cliente_id, total, forma_pagamento, valor_pago, troco, data_venda)
         VALUES (?, ?, ?, ?, ?, datetime('now'))
         """
-        self.cursor.execute(query_venda, (cliente_id, total, forma_pagamento, valor_pago, troco))
-        venda_id = self.cursor.lastrowid
-        
+        cursor.execute(query_venda, (cliente_id, total, forma_pagamento, valor_pago, troco))
+        venda_id = cursor.lastrowid
+
         # 2. Registrar os itens da venda
         query_item = """
-        INSERT INTO itens_venda (venda_id, produto_id, quantidade, preco_unitario, subtotal)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO itens_vendidos (venda_id, produto_id, quantidade, preco_unitario)
+        VALUES (?, ?, ?, ?)
         """
-        
+
         # 3. Atualizar estoque
-        query_estoque = "UPDATE produtos SET estoque = estoque - ? WHERE id = ?"
-        
+        query_estoque = "UPDATE produtos SET quantidade = quantidade - ? WHERE id = ?"
+
         for item in itens_carrinho:
             produto_id = item.get('id')
             quantidade = item.get('quantidade', 1)
             preco_unitario = item.get('preco', 0)
-            subtotal = quantidade * preco_unitario
-            
+
             # Registrar item
-            self.cursor.execute(query_item, (venda_id, produto_id, quantidade, preco_unitario, subtotal))
-            
+            cursor.execute(query_item, (venda_id, produto_id, quantidade, preco_unitario))
+
             # Atualizar estoque
-            self.cursor.execute(query_estoque, (quantidade, produto_id))
-        
-        self.conn.commit()
+            cursor.execute(query_estoque, (quantidade, produto_id))
+
+        conn.commit()
         print(f"DEBUG: Venda #{venda_id} registrada com sucesso!")
-        return 1, "Venda registrada com sucesso (Placeholder)."
-        
+        return venda_id, "Venda registrada com sucesso."
     except Exception as e:
-        self.conn.rollback()
+        if conn:
+            conn.rollback()
         print(f"ERRO AO REGISTRAR VENDA: {e}")
         return None, f"Erro ao registrar venda: {str(e)}"
+    finally:
+        if conn:
+            conn.close()
 
 def excluir_venda(venda_id):
     """Exclui uma venda e reverte o estoque dos produtos envolvidos."""

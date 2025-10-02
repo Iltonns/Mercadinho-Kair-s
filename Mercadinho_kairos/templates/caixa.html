@@ -293,11 +293,24 @@
 let carrinho = [];
 let produtoPesavelAtual = null;
 
+
 /* =======================================================
-   INICIALIZAÇÃO
+   INICIALIZAÇÃO - VERSÃO CORRIGIDA
    ======================================================= */
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔄 Inicializando caixa...');
+    
+    // Verificar se elementos essenciais existem
+    const elementosEssenciais = [
+        'codigo-barras', 'resultados-busca', 'lista-resultados',
+        'carrinho-vazio', 'carrinho-itens', 'tbody-carrinho'
+    ];
+    
+    elementosEssenciais.forEach(id => {
+        if (!document.getElementById(id)) {
+            console.error(`❌ Elemento essencial não encontrado: ${id}`);
+        }
+    });
     
     // Configurar eventos
     configurarEventos();
@@ -310,60 +323,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // Focar no campo de código de barras
     setTimeout(() => {
         const campoCodigo = document.getElementById('codigo-barras');
-        if (campoCodigo) campoCodigo.focus();
+        if (campoCodigo) {
+            campoCodigo.focus();
+        } else {
+            console.error('❌ Campo código de barras não encontrado');
+        }
     }, 500);
     
     console.log('✅ Caixa inicializado');
 });
 
-function configurarEventos() {
-    // Busca automática
-    const campoCodigo = document.getElementById('codigo-barras');
-    if (campoCodigo) {
-        let timeoutBusca;
-        campoCodigo.addEventListener('input', function() {
-            clearTimeout(timeoutBusca);
-            const termo = this.value.trim();
-            if (termo.length >= 2) {
-                timeoutBusca = setTimeout(() => buscarProdutoAuto(termo), 300);
-            }
-        });
-        
-        campoCodigo.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                buscarProdutoAuto(this.value.trim());
-            }
-        });
-    }
-
-    // Eventos de pagamento
-    const formaPagamento = document.getElementById('forma-pagamento');
-    if (formaPagamento) {
-        formaPagamento.addEventListener('change', function() {
-            toggleCampoDinheiro();
-            calcularTroco();
-        });
-    }
-
-    const valorPago = document.getElementById('valor-pago');
-    if (valorPago) {
-        valorPago.addEventListener('input', calcularTroco);
-        valorPago.addEventListener('change', calcularTroco);
-    }
-
-    // Evento de peso
-    const pesoKg = document.getElementById('peso-kg');
-    if (pesoKg) {
-        pesoKg.addEventListener('input', calcularTotalPesavel);
-    }
-}
-
 /* =======================================================
-   BUSCA DE PRODUTOS
+   BUSCA DE PRODUTOS - VERSÃO CORRIGIDA
    ======================================================= */
 async function buscarProdutoAuto(termo) {
-    if (!termo || termo.length < 2) return;
+    if (!termo || termo.length < 2) {
+        ocultarResultadosBusca();
+        return;
+    }
     
     console.log(`🔍 Buscando: "${termo}"`);
     
@@ -384,23 +361,31 @@ async function buscarProdutoAuto(termo) {
         console.log('📦 Resposta busca:', data);
 
         if (data.success) {
+            ocultarResultadosBusca();
+            
             if (data.pesavel) {
                 // Produto pesável - abrir modal de peso
                 abrirModalPeso(data.produto);
-            } else if (data.adicionar_carrinho) {
+                limparCampoBusca(false);
+            } else if (data.adicionar_carrinho && data.produto) {
                 // Produto normal - adicionar diretamente ao carrinho
                 adicionarAoCarrinho(data.produto, data.quantidade || 1);
                 mostrarNotificacao(`✅ ${data.produto.nome} adicionado ao carrinho!`, 'success');
-                limparCampoBusca();
+                limparCampoBusca(true);
             } else if (data.produtos && data.produtos.length > 0) {
                 // Múltiplos resultados - mostrar lista
-                mostrarResultadosBusca(data.produtos, data.message);
+                mostrarResultadosBusca(data.produtos);
+                limparCampoBusca(false);
+            } else {
+                mostrarNotificacao(`❌ Produto não encontrado`, 'warning');
+                limparCampoBusca(true);
             }
         } else {
             mostrarNotificacao(`❌ ${data.message || 'Produto não encontrado'}`, 'warning');
+            ocultarResultadosBusca();
         }
     } catch (error) {
-        console.error('Erro na busca:', error);
+        console.error('❌ Erro na busca:', error);
         mostrarNotificacao('❌ Erro na busca. Tente novamente.', 'danger');
     }
 }
@@ -414,19 +399,78 @@ function buscarProduto() {
     buscarProdutoAuto(termo);
 }
 
-function limparCampoBusca() {
-    const campo = document.getElementById('codigo-barras');
-    if (campo) {
-        campo.value = '';
-        campo.focus();
-    }
-    ocultarResultadosBusca();
-}
-
+// CORREÇÃO: Função para ocultar resultados
 function ocultarResultadosBusca() {
     const container = document.getElementById('resultados-busca');
-    if (container) container.style.display = 'none';
+    if (container) {
+        container.style.display = 'none';
+    }
 }
+
+// CORREÇÃO: Função para mostrar resultados (parâmetro corrigido)
+function mostrarResultadosBusca(produtos) {
+    const container = document.getElementById('resultados-busca');
+    const lista = document.getElementById('lista-resultados');
+    
+    if (!container || !lista) {
+        console.error('❌ Elementos DOM não encontrados para mostrar resultados');
+        return;
+    }
+    
+    if (!produtos || produtos.length === 0) {
+        lista.innerHTML = '<div class="list-group-item text-muted text-center">Nenhum produto encontrado</div>';
+        container.style.display = 'block';
+        return;
+    }
+    
+    // CORREÇÃO: Template seguro para produtos
+    lista.innerHTML = produtos.map(produto => {
+        const produtoSeguro = {
+            id: produto.id || 0,
+            nome: produto.nome || 'Produto sem nome',
+            codigo_barras: produto.codigo_barras || 'N/A',
+            quantidade: produto.quantidade || 0,
+            preco: produto.preco || 0
+        };
+        
+        return `
+        <div class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1 text-dark">${produtoSeguro.nome}</h6>
+                    <small class="text-muted">
+                        📋 ${produtoSeguro.codigo_barras} | 
+                        📦 Estoque: ${produtoSeguro.quantidade}
+                    </small>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold text-success">R$ ${parseFloat(produtoSeguro.preco).toFixed(2)}</div>
+                    <button class="btn btn-sm btn-gradient-primary mt-1"
+                            onclick="adicionarAoCarrinho(${produtoSeguro.id}, '${produtoSeguro.nome.replace(/'/g, "\\'")}', ${produtoSeguro.preco})">
+                        <i class="fas fa-cart-plus me-1"></i>Add
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
+    
+    container.style.display = 'block';
+}
+
+// CORREÇÃO: Função auxiliar para adicionar produto simples
+function adicionarProdutoSimples(id, nome, preco) {
+    const produto = {
+        id: id,
+        nome: nome,
+        preco: parseFloat(preco),
+        quantidade: 1,
+        subtotal: parseFloat(preco),
+        pesavel: false
+    };
+    adicionarAoCarrinho(produto);
+}
+
 
 /* =======================================================
    MODAL PESÁVEL
@@ -439,8 +483,11 @@ function abrirModalPeso(produto) {
         <strong>📋 Código:</strong> ${produto.codigo_personalizado || produto.codigo_barras || '—'}
     `;
     
-    document.getElementById('preco-kg').textContent = parseFloat(produto.preco_por_kg || produto.preco || 0).toFixed(2);
-    document.getElementById('total-calculado').textContent = '0.00';
+    const precoKgElem = document.getElementById('preco-kg');
+    if (precoKgElem) precoKgElem.textContent = parseFloat(produto.preco_por_kg || produto.preco || 0).toFixed(2);
+    
+    const totalCalculadoElem = document.getElementById('total-calculado');
+    if (totalCalculadoElem) totalCalculadoElem.textContent = '0.00';
     
     const campoPeso = document.getElementById('peso-kg');
     if (campoPeso) {
@@ -459,7 +506,8 @@ function calcularTotalPesavel() {
     const precoKg = parseFloat(produtoPesavelAtual.preco_por_kg || produtoPesavelAtual.preco || 0);
     const total = peso * precoKg;
     
-    document.getElementById('total-calculado').textContent = total.toFixed(2);
+    const totalCalculadoElem = document.getElementById('total-calculado');
+    if (totalCalculadoElem) totalCalculadoElem.textContent = total.toFixed(2);
 }
 
 function adicionarProdutoPesavel() {
@@ -578,8 +626,13 @@ function atualizarCarrinho() {
         carrinhoVazio.style.display = 'block';
         carrinhoItens.style.display = 'none';
         if (badgeCarrinho) badgeCarrinho.textContent = '0 itens';
-        document.getElementById('total-carrinho').textContent = '0.00';
-        document.getElementById('total-itens').textContent = '0';
+        
+        const totalCarrinhoElem = document.getElementById('total-carrinho');
+        if (totalCarrinhoElem) totalCarrinhoElem.textContent = '0.00';
+        
+        const totalItensElem = document.getElementById('total-itens');
+        if (totalItensElem) totalItensElem.textContent = '0';
+        
         calcularTroco();
         return;
     }
@@ -641,8 +694,12 @@ function atualizarCarrinho() {
     
     // Calcular totais
     const total = carrinho.reduce((sum, item) => sum + parseFloat(item.subtotal || 0), 0);
-    document.getElementById('total-carrinho').textContent = total.toFixed(2);
-    document.getElementById('total-itens').textContent = carrinho.length;
+    
+    const totalCarrinhoElem = document.getElementById('total-carrinho');
+    if (totalCarrinhoElem) totalCarrinhoElem.textContent = total.toFixed(2);
+    
+    const totalItensElem = document.getElementById('total-itens');
+    if (totalItensElem) totalItensElem.textContent = carrinho.length;
     
     calcularTroco();
 }
@@ -667,12 +724,14 @@ function calcularTroco() {
     const total = carrinho.reduce((sum, item) => sum + parseFloat(item.subtotal || 0), 0);
     const formaPagamento = document.getElementById('forma-pagamento').value;
     
+    const trocoElem = document.getElementById('troco');
+    
     if (formaPagamento === 'dinheiro') {
         const valorPago = parseFloat(document.getElementById('valor-pago').value.replace(',', '.')) || 0;
         const troco = Math.max(valorPago - total, 0);
-        document.getElementById('troco').textContent = troco.toFixed(2);
+        if (trocoElem) trocoElem.textContent = troco.toFixed(2);
     } else {
-        document.getElementById('troco').textContent = '0.00';
+        if (trocoElem) trocoElem.textContent = '0.00';
     }
 }
 
@@ -721,14 +780,20 @@ async function finalizarVenda() {
     btnFinalizar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processando...';
     
     try {
-        mostrarModalCarregamento('Finalizando venda...');
         
         const response = await fetch('/caixa/finalizar', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(dadosVenda)
+            body: JSON.stringify({
+                cliente_id: clienteId,
+                itens: carrinho,
+                total: total,
+                forma_pagamento: formaPagamento,
+                valor_pago: valorPago,
+                troco: troco
+            })
         });
         
         const data = await response.json();
@@ -736,7 +801,8 @@ async function finalizarVenda() {
         
         if (data.success) {
             // Sucesso - mostrar confirmação
-            document.getElementById('numero-venda').textContent = `#${data.venda_id}`;
+            const numeroVendaElem = document.getElementById('numero-venda');
+            if (numeroVendaElem) numeroVendaElem.textContent = `#${data.venda_id}`;
             const modal = new bootstrap.Modal(document.getElementById('modalConfirmacao'));
             modal.show();
             
@@ -753,6 +819,56 @@ async function finalizarVenda() {
         // Reabilitar botão
         btnFinalizar.disabled = false;
         btnFinalizar.innerHTML = textoOriginal;
+    }
+}
+
+/* =======================================================
+   CORREÇÃO DA FUNÇÃO configurarEventos
+   ======================================================= */
+function configurarEventos() {
+    // Busca automática - CORREÇÃO: Verificação de elemento
+    const campoCodigo = document.getElementById('codigo-barras');
+    if (campoCodigo) {
+        let timeoutBusca;
+        campoCodigo.addEventListener('input', function() {
+            clearTimeout(timeoutBusca);
+            const termo = this.value.trim();
+            if (termo.length >= 2) {
+                timeoutBusca = setTimeout(() => buscarProdutoAuto(termo), 300);
+            } else if (termo.length === 0) {
+                ocultarResultadosBusca();
+            }
+        });
+        
+        campoCodigo.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                buscarProdutoAuto(this.value.trim());
+            }
+        });
+    } else {
+        console.error('❌ Campo de busca não encontrado para configurar eventos');
+    }
+
+    // Eventos de pagamento - CORREÇÃO: Verificação de elementos
+    const formaPagamento = document.getElementById('forma-pagamento');
+    if (formaPagamento) {
+        formaPagamento.addEventListener('change', function() {
+            toggleCampoDinheiro();
+            calcularTroco();
+        });
+    }
+
+    const valorPago = document.getElementById('valor-pago');
+    if (valorPago) {
+        valorPago.addEventListener('input', calcularTroco);
+        valorPago.addEventListener('change', calcularTroco);
+    }
+
+    // Evento de peso - CORREÇÃO: Verificação de elemento
+    const pesoKg = document.getElementById('peso-kg');
+    if (pesoKg) {
+        pesoKg.addEventListener('input', calcularTotalPesavel);
     }
 }
 
@@ -799,10 +915,17 @@ function novaVenda() {
     carrinho = [];
     
     // Limpar campos
-    document.getElementById('codigo-barras').value = '';
-    document.getElementById('cliente-venda').value = '';
-    document.getElementById('forma-pagamento').value = 'dinheiro';
-    document.getElementById('valor-pago').value = '0.00';
+    const codigoBarrasElem = document.getElementById('codigo-barras');
+    if (codigoBarrasElem) codigoBarrasElem.value = '';
+    
+    const clienteVendaElem = document.getElementById('cliente-venda');
+    if (clienteVendaElem) clienteVendaElem.value = '';
+    
+    const formaPagamentoElem = document.getElementById('forma-pagamento');
+    if (formaPagamentoElem) formaPagamentoElem.value = 'dinheiro';
+    
+    const valorPagoElem = document.getElementById('valor-pago');
+    if (valorPagoElem) valorPagoElem.value = '0.00';
     
     // Atualizar interface
     atualizarCarrinho();
@@ -814,13 +937,14 @@ function novaVenda() {
     if (modal) modal.hide();
     
     // Focar no campo de busca
-    document.getElementById('codigo-barras').focus();
+    if (codigoBarrasElem) codigoBarrasElem.focus();
     
     mostrarNotificacao('🔄 Nova venda iniciada', 'info');
 }
 
 function imprimirRecibo() {
-    const numeroVenda = document.getElementById('numero-venda').textContent.replace('#', '');
+    const numeroVendaElem = document.getElementById('numero-venda');
+    const numeroVenda = numeroVendaElem ? numeroVendaElem.textContent.replace('#', '') : null;
     if (numeroVenda && numeroVenda !== '000') {
         window.open(`/recibo/${numeroVenda}`, '_blank');
     }
@@ -868,6 +992,19 @@ function mostrarNotificacao(mensagem, tipo) {
             alerta.remove();
         }
     }, 5000);
+}
+
+/* =======================================================
+   CORREÇÃO DA FUNÇÃO limparCampoBusca
+   ======================================================= */
+function limparCampoBusca(focar = true) {
+    const campo = document.getElementById('codigo-barras');
+    if (campo) {
+        campo.value = '';
+        if (focar) {
+            setTimeout(() => campo.focus(), 100);
+        }
+    }
 }
 </script>
 

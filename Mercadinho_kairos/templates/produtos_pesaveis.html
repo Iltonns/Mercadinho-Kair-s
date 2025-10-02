@@ -24,46 +24,6 @@
         </div>
     </div>
 
-    <!-- Cards de Estatísticas -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card card-statistic bg-gradient-warning text-white">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-weight fa-2x mb-2 text-white"></i>
-                    <h3 class="text-white mb-0">{{ produtos|length }}</h3>
-                    <small>Total Pesáveis</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card card-statistic bg-gradient-success text-white">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-dollar-sign fa-2x mb-2 text-white"></i>
-                    <h4 class="text-white mb-0">R$ {{ "%.2f"|format(preco_medio_kg) }}</h4>
-                    <small>Preço Médio/Kg</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card card-statistic bg-gradient-info text-white">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-tags fa-2x mb-2 text-white"></i>
-                    <h3 class="text-white mb-0">{{ produtos_ativos }}</h3>
-                    <small>Produtos Ativos</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="card card-statistic bg-gradient-purple text-white">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-chart-line fa-2x mb-2 text-white"></i>
-                    <h4 class="text-white mb-0">{{ produtos_recentes }}</h4>
-                    <small>Cadastrados (30d)</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Filtros e Busca -->
     <div class="card border-0 shadow-lg mb-4">
         <div class="card-header bg-gradient-warning text-white py-3">
@@ -714,6 +674,19 @@ function mostrarNotificacao(mensagem, tipo) {
 /* Destaque para produtos pesáveis */
 .border-warning {
     border-color: #f39c12 !important;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #ea6666ff 0%, #d20000ff 100%) !important;
+}
+.bg-gradient-success {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%) !important;
+}
+.bg-gradient-info {
+    background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%) !important;
+}
+.bg-gradient-purple {
+    background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%) !important;
 }
 </style>
 {% endblock %}

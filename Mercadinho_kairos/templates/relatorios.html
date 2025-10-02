@@ -33,6 +33,17 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-xl-2 col-md-4 col-6 mb-3">
+            <div class="card card-statistic bg-gradient-warning text-white shadow-lg">
+                <div class="card-body text-center p-3">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2 text-white"></i>
+                    <h3 class="text-white mb-0" id="stat-estoque-baixo">{{ estatisticas.produtos_estoque_baixo or 0 }}</h3>
+                    <small>Estoque Baixo</small>
+                </div>
+            </div>
+        </div>
+
         <div class="col-xl-2 col-md-4 col-6 mb-3">
             <div class="card card-statistic bg-gradient-success text-white shadow-lg">
                 <div class="card-body text-center p-3">
@@ -60,15 +71,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-2 col-md-4 col-6 mb-3">
-            <div class="card card-statistic bg-gradient-purple text-white shadow-lg">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-shopping-cart fa-2x mb-2 text-white"></i>
-                    <h3 class="text-white mb-0" id="stat-itens-vendidos">{{ estatisticas.total_itens_vendidos or 0 }}</h3>
-                    <small>Itens Vendidos</small>
-                </div>
-            </div>
-        </div>
+       
         <div class="col-xl-2 col-md-4 col-6 mb-3">
             <div class="card card-statistic bg-gradient-orange text-white shadow-lg">
                 <div class="card-body text-center p-3">
@@ -236,46 +239,7 @@
                             </tfoot>
                         </table>
                     </div>
-
-                    <!-- Resumo Estatístico -->
-                    <div class="row mt-4">
-                        <div class="col-md-3">
-                            <div class="card card-statistic bg-gradient-success text-white">
-                                <div class="card-body text-center py-4">
-                                    <i class="fas fa-box fa-2x mb-2 text-white"></i>
-                                    <h3 class="text-white mb-1" id="resumo-em-estoque">{{ estatisticas.total_produtos - estatisticas.produtos_estoque_baixo - produtos_sem_estoque }}</h3>
-                                    <small>Em Estoque</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card card-statistic bg-gradient-warning text-white">
-                                <div class="card-body text-center py-4">
-                                    <i class="fas fa-exclamation-triangle fa-2x mb-2 text-white"></i>
-                                    <h3 class="text-white mb-1" id="resumo-estoque-baixo">{{ estatisticas.produtos_estoque_baixo }}</h3>
-                                    <small>Estoque Baixo</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card card-statistic bg-gradient-danger text-white">
-                                <div class="card-body text-center py-4">
-                                    <i class="fas fa-times-circle fa-2x mb-2 text-white"></i>
-                                    <h3 class="text-white mb-1" id="resumo-sem-estoque">{{ produtos_sem_estoque }}</h3>
-                                    <small>Sem Estoque</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card card-statistic bg-gradient-info text-white">
-                                <div class="card-body text-center py-4">
-                                    <i class="fas fa-dollar-sign fa-2x mb-2 text-white"></i>
-                                    <h4 class="text-white mb-1">R$ {{ "%.2f"|format(estatisticas.valor_estoque) }}</h4>
-                                    <small>Valor Total</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                                  
                     {% else %}
                     <div class="text-center py-5">
                         <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
@@ -929,26 +893,50 @@ function exportarMovimentacoesPDF() {
     background: rgba(255,255,255,0.3);
 }
 
-/* Tabs personalizadas */
+/* Tabs personalizadas - VISUAL UNIFICADO E PROFISSIONAL */
+.nav-tabs-custom {
+    background: linear-gradient(90deg, #7b5eea 0%, #764ba2 100%);
+    border-radius: 1rem 1rem 0 0;
+    padding: 0.25rem 0.5rem;
+}
+
 .nav-tabs-custom .nav-link {
     border: none;
     border-bottom: 3px solid transparent;
     font-weight: 600;
-    color: #6c757d;
-    padding: 1rem 1.5rem;
-    transition: all 0.3s ease;
+    color: #fff !important;
     background: transparent;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem 0.75rem 0 0;
+    margin-right: 0.25rem;
+    transition: all 0.2s;
+    box-shadow: none;
+    opacity: 1;
+    position: relative;
+    z-index: 1;
+}
+
+.nav-tabs-custom .nav-link:not(.active):hover {
+    background: rgba(255,255,255,0.06);
+    color: #fff !important;
+    border-bottom: 3px solid #bdbdbd;
 }
 
 .nav-tabs-custom .nav-link.active {
-    border-bottom-color: #667eea;
-    color: #667eea;
-    background: linear-gradient(to bottom, rgba(102, 126, 234, 0.1), transparent);
+    color: #fff !important;
+    background: transparent;
+    border-bottom: 3px solid #fff;
+    font-weight: 700;
+    box-shadow: none;
+    z-index: 2;
 }
 
-.nav-tabs-custom .nav-link:hover {
-    border-bottom-color: #dee2e6;
-    color: #495057;
+.nav-tabs-custom .nav-link .badge {
+    background: #fff !important;
+    color: #764ba2 !important;
+    font-weight: 700;
+    margin-left: 0.5rem;
+    box-shadow: 0 1px 4px rgba(102,126,234,0.10);
 }
 
 /* Tabelas com cores vivas */

@@ -27,7 +27,7 @@
     <!-- Cards de Estatísticas -->
     <div class="row mb-4">
         <div class="col-xl-2 col-md-4 col-6 mb-3">
-            <div class="card card-statistic bg-gradient-primary text-white">
+            <div class="card card-statistic bg-gradient-blue text-white">
                 <div class="card-body text-center p-3">
                     <i class="fas fa-box fa-2x mb-2 text-white"></i>
                     <h3 class="text-white mb-0" id="stat-total-produtos">{{ produtos|length }}</h3>
@@ -36,7 +36,7 @@
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-6 mb-3">
-            <div class="card card-statistic bg-gradient-success text-white">
+            <div class="card card-statistic bg-gradient-green text-white">
                 <div class="card-body text-center p-3">
                     <i class="fas fa-check-circle fa-2x mb-2 text-white"></i>
                     <h3 class="text-white mb-0" id="stat-em-estoque">{{ produtos_com_estoque|default(0) }}</h3>
@@ -45,7 +45,7 @@
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-6 mb-3">
-            <div class="card card-statistic bg-gradient-warning text-white">
+            <div class="card card-statistic bg-gradient-yellow text-white">
                 <div class="card-body text-center p-3">
                     <i class="fas fa-exclamation-triangle fa-2x mb-2 text-white"></i>
                     <h3 class="text-white mb-0" id="stat-estoque-baixo">{{ produtos_estoque_baixo|default(0) }}</h3>
@@ -54,7 +54,7 @@
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-6 mb-3">
-            <div class="card card-statistic bg-gradient-danger text-white">
+            <div class="card card-statistic bg-gradient-red text-white">
                 <div class="card-body text-center p-3">
                     <i class="fas fa-times-circle fa-2x mb-2 text-white"></i>
                     <h3 class="text-white mb-0" id="stat-sem-estoque">{{ produtos_sem_estoque|default(0) }}</h3>
@@ -63,7 +63,7 @@
             </div>
         </div>
         <div class="col-xl-2 col-md-4 col-6 mb-3">
-            <div class="card card-statistic bg-gradient-info text-white">
+            <div class="card card-statistic bg-gradient-orange text-white">
                 <div class="card-body text-center p-3">
                     <i class="fas fa-dollar-sign fa-2x mb-2 text-white"></i>
                     <h4 class="text-white mb-0">R$ {{ "%.2f"|format(valor_total_estoque|default(0)) }}</h4>
@@ -748,6 +748,25 @@ function mostrarNotificacao(mensagem, tipo) {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     font-weight: 700;
+}
+
+.bg-gradient-blue {
+    background: linear-gradient(135deg, #36d1c4 0%, #1e3799 100%) !important;
+}
+.bg-gradient-green {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%) !important;
+}
+.bg-gradient-yellow {
+    background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%) !important;
+}
+.bg-gradient-red {
+    background: linear-gradient(135deg, #f953c6 0%, #b91d73 100%) !important;
+}
+.bg-gradient-purple {
+    background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%) !important;
+}
+.bg-gradient-orange {
+    background: linear-gradient(135deg, #ffb347 0%, #ffcc33 100%) !important;
 }
 </style>
 {% endblock %}
