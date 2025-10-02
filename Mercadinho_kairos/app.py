@@ -11,7 +11,7 @@ import os
 import io
 import pandas as pd
 import copy
-# Imports ReportLab para PDF
+from Imports ReportLab para PDF
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
