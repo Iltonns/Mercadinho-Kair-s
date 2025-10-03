@@ -228,9 +228,10 @@ def relatorios():
 def filtrar_relatorios():
     """Filtrar relatórios por data - VERSÃO MAIS ROBUSTA"""
     try:
-        data_inicio = request.json.get('data_inicio')
-        data_fim = request.json.get('data_fim')
-        tipo_relatorio = request.json.get('tipo_relatorio', 'completo')
+        data = request.get_json()
+        data_inicio = data.get('data_inicio')
+        data_fim = data.get('data_fim')
+        tipo_relatorio = data.get('tipo_relatorio', 'completo')
         
         print(f"DEBUG FILTRO: {data_inicio} até {data_fim}, tipo: {tipo_relatorio}")
         

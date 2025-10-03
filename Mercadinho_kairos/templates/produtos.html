@@ -468,6 +468,7 @@ function buscarLocalmente(termo) {
     });
     
     document.getElementById('total-produtos').textContent = encontrados;
+    atualizarEstoqueBaixo();
     
     if (encontrados === 0) {
         document.getElementById('resultado-busca-estoque').innerHTML = 
@@ -510,6 +511,7 @@ function mostrarTodosProdutos() {
         produto.classList.remove('table-success', 'bg-warning', 'bg-opacity-10');
     });
     document.getElementById('total-produtos').textContent = todosProdutos.length;
+    atualizarEstoqueBaixo();
 }
 
 function aplicarFiltroEstoque(filtro) {
@@ -544,6 +546,7 @@ function aplicarFiltroEstoque(filtro) {
     });
     
     document.getElementById('total-produtos').textContent = visiveis;
+    atualizarEstoqueBaixo();
 }
 
 function carregarInfoProduto(produtoId) {
@@ -678,6 +681,416 @@ function mostrarNotificacao(mensagem, tipo) {
             alerta.remove();
         }
     }, 5000);
+}
+
+function atualizarEstoqueBaixo() {
+    // Conta quantos produtos visíveis estão com estoque > 0 e <= 10
+    let estoqueBaixo = 0;
+    todosProdutos.forEach(produto => {
+        if (produto.style.display !== 'none') {
+            const estoque = parseInt(produto.getAttribute('data-estoque'));
+            if (estoque > 0 && estoque <= 10) {
+                estoqueBaixo++;
+            }
+        }
+    });
+    document.getElementById('stat-estoque-baixo').textContent = estoqueBaixo;
+}
+
+// Chame essa função após buscas e filtros:
+function buscarLocalmente(termo) {
+    const termoLower = termo.toLowerCase();
+    let encontrados = 0;
+    
+    // Oculta todos os produtos
+    todosProdutos.forEach(produto => {
+        produto.style.display = 'none';
+        produto.classList.remove('table-success', 'bg-warning', 'bg-opacity-10');
+    });
+    
+    // Busca nos atributos data
+    todosProdutos.forEach(produto => {
+        const nome = produto.getAttribute('data-nome');
+        const codigo = produto.getAttribute('data-codigo');
+        const categoria = produto.getAttribute('data-categoria');
+        
+        if (nome.includes(termoLower) || codigo.includes(termoLower) || categoria.includes(termoLower)) {
+            produto.style.display = '';
+            produto.classList.add('bg-warning', 'bg-opacity-10');
+            encontrados++;
+        }
+    });
+    
+    document.getElementById('total-produtos').textContent = encontrados;
+    atualizarEstoqueBaixo();
+    
+    if (encontrados === 0) {
+        document.getElementById('resultado-busca-estoque').innerHTML = 
+            `<div class="alert alert-warning border-0 bg-warning bg-opacity-10">
+                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                Nenhum produto encontrado para "<strong>${termo}</strong>"
+            </div>`;
+    } else {
+        document.getElementById('resultado-busca-estoque').innerHTML = 
+            `<div class="alert alert-info border-0 bg-info bg-opacity-10">
+                <i class="fas fa-info-circle me-2 text-info"></i>
+                Encontrados <strong>${encontrados}</strong> produto(s) para "<strong>${termo}</strong>"
+            </div>`;
+    }
+}
+
+function mostrarTodosProdutos() {
+    todosProdutos.forEach(produto => {
+        produto.style.display = '';
+        produto.classList.remove('table-success', 'bg-warning', 'bg-opacity-10');
+    });
+    document.getElementById('total-produtos').textContent = todosProdutos.length;
+    atualizarEstoqueBaixo();
+}
+
+function aplicarFiltroEstoque(filtro) {
+    let visiveis = 0;
+    
+    // Limpa o termo de busca e resultado
+    document.getElementById('busca-produto-estoque').value = '';
+    document.getElementById('resultado-busca-estoque').innerHTML = '';
+
+    todosProdutos.forEach(produto => {
+        produto.classList.remove('table-success', 'bg-warning', 'bg-opacity-10');
+        const estoque = parseInt(produto.getAttribute('data-estoque'));
+        
+        let mostrar = false;
+        switch(filtro) {
+            case 'com-estoque':
+                mostrar = estoque > 0;
+                break;
+            case 'estoque-baixo':
+                mostrar = estoque > 0 && estoque <= 10;
+                break;
+            case 'sem-estoque':
+                mostrar = estoque === 0;
+                break;
+            default: // 'todos'
+                mostrar = true;
+                break;
+        }
+        
+        produto.style.display = mostrar ? '' : 'none';
+        if (mostrar) visiveis++;
+    });
+    
+    document.getElementById('total-produtos').textContent = visiveis;
+    atualizarEstoqueBaixo();
+}
+
+function carregarInfoProduto(produtoId) {
+    mostrarModalCarregamento('Carregando informações...');
+    
+    fetch(`/api/produto/${produtoId}`)
+    .then(response => {
+        if (!response.ok) throw new Error('Produto não encontrado');
+        return response.json();
+    })
+    .then(produto => {
+        ocultarModalCarregamento();
+        
+        const infoHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-primary mb-3">${produto.nome}</h6>
+                    <div class="mb-2">
+                        <strong>ID:</strong> <span class="badge bg-primary">#${produto.id}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Preço:</strong> 
+                        <span class="fw-bold text-success">R$ ${parseFloat(produto.preco).toFixed(2)}</span>
+                        ${produto.pesavel ? '<small class="text-muted"> (por kg)</small>' : ''}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Estoque:</strong> 
+                        <span class="fw-bold ${produto.quantidade > 10 ? 'text-success' : produto.quantidade > 0 ? 'text-warning' : 'text-danger'}">
+                            ${produto.quantidade} ${produto.pesavel ? 'kg' : 'un'}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-2">
+                        <strong>Código Barras:</strong> 
+                        <code class="bg-light px-2 py-1 rounded">${produto.codigo_barras || 'N/A'}</code>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Categoria:</strong> ${produto.categoria || 'Geral'}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Tipo:</strong> 
+                        <span class="badge ${produto.pesavel ? 'bg-warning' : 'bg-info'}">
+                            ${produto.pesavel ? '⚖️ Pesável' : '📦 Unitário'}
+                        </span>
+                    </div>
+                    ${produto.data_criacao ? `
+                    <div class="mb-2">
+                        <strong>Cadastrado em:</strong> ${new Date(produto.data_criacao).toLocaleDateString('pt-BR')}
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            ${produto.descricao ? `
+            <hr>
+            <div class="row">
+                <div class="col-12">
+                    <strong>Descrição:</strong>
+                    <p class="mb-0 text-muted">${produto.descricao}</p>
+                </div>
+            </div>
+            ` : ''}
+        `;
+        
+        document.getElementById('info-produto-conteudo').innerHTML = infoHTML;
+        document.getElementById('btn-editar-produto').href = `/produtos/editar/${produtoId}`;
+        
+        new bootstrap.Modal(document.getElementById('modalInfoProduto')).show();
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        ocultarModalCarregamento();
+        document.getElementById('info-produto-conteudo').innerHTML = 
+            '<div class="alert alert-danger">Erro ao carregar informações do produto.</div>';
+        new bootstrap.Modal(document.getElementById('modalInfoProduto')).show();
+    });
+}
+
+// Funções auxiliares
+function confirmarExclusao(nomeProduto) {
+    return confirm(`Tem certeza que deseja excluir o produto "${nomeProduto}"?\n\nEsta ação não pode ser desfeita!`);
+}
+
+function mostrarModalCarregamento(mensagem = 'Processando...') {
+    document.getElementById('modal-mensagem').textContent = mensagem;
+    const modal = new bootstrap.Modal(document.getElementById('modalCarregamento'));
+    modal.show();
+}
+
+function ocultarModalCarregamento() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modalCarregamento'));
+    if (modal) modal.hide();
+}
+
+// CORREÇÃO: Funções de exportação para chamar o servidor
+function exportarParaExcel() {
+    mostrarNotificacao('📊 Exportando para Excel...', 'info');
+    // Redireciona para a rota global de exportação do app.py
+    window.location.href = '{{ url_for("exportar_excel") }}';
+}
+
+function exportarParaPDF() {
+    mostrarNotificacao('📄 Exportando para PDF...', 'info');
+    // Redireciona para a rota global de exportação do app.py
+    window.location.href = '{{ url_for("exportar_pdf") }}';
+}
+
+function mostrarNotificacao(mensagem, tipo) {
+    const notificacoesAntigas = document.querySelectorAll('.alert-notificacao');
+    notificacoesAntigas.forEach(notif => notif.remove());
+
+    const alerta = document.createElement('div');
+    alerta.className = `alert alert-${tipo} alert-dismissible fade show alert-notificacao shadow`;
+    alerta.style.position = 'fixed';
+    alerta.style.top = '20px';
+    alerta.style.right = '20px';
+    alerta.style.zIndex = '1060';
+    alerta.style.minWidth = '350px';
+    
+    alerta.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-${tipo === 'success' ? 'check-circle' : tipo === 'warning' ? 'exclamation-triangle' : 'exclamation-circle'} me-2 fs-5"></i>
+            <div class="flex-grow-1">${mensagem}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(alerta);
+    
+    setTimeout(() => {
+        if (alerta.parentNode) {
+            alerta.remove();
+        }
+    }, 5000);
+}
+
+function atualizarEstoqueBaixo() {
+    // Conta quantos produtos visíveis estão com estoque > 0 e <= 10
+    let estoqueBaixo = 0;
+    todosProdutos.forEach(produto => {
+        if (produto.style.display !== 'none') {
+            const estoque = parseInt(produto.getAttribute('data-estoque'));
+            if (estoque > 0 && estoque <= 10) {
+                estoqueBaixo++;
+            }
+        }
+    });
+    document.getElementById('stat-estoque-baixo').textContent = estoqueBaixo;
+}
+
+// Chame essa função após buscas e filtros:
+function buscarLocalmente(termo) {
+    const termoLower = termo.toLowerCase();
+    let encontrados = 0;
+    
+    // Oculta todos os produtos
+    todosProdutos.forEach(produto => {
+        produto.style.display = 'none';
+        produto.classList.remove('table-success', 'bg-warning', 'bg-opacity-10');
+    });
+    
+    // Busca nos atributos data
+    todosProdutos.forEach(produto => {
+        const nome = produto.getAttribute('data-nome');
+        const codigo = produto.getAttribute('data-codigo');
+        const categoria = produto.getAttribute('data-categoria');
+        
+        if (nome.includes(termoLower) || codigo.includes(termoLower) || categoria.includes(termoLower)) {
+            produto.style.display = '';
+            produto.classList.add('bg-warning', 'bg-opacity-10');
+            encontrados++;
+        }
+    });
+    
+    document.getElementById('total-produtos').textContent = encontrados;
+    atualizarEstoqueBaixo();
+    
+    if (encontrados === 0) {
+        document.getElementById('resultado-busca-estoque').innerHTML = 
+            `<div class="alert alert-warning border-0 bg-warning bg-opacity-10">
+                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                Nenhum produto encontrado para "<strong>${termo}</strong>"
+            </div>`;
+    } else {
+        document.getElementById('resultado-busca-estoque').innerHTML = 
+            `<div class="alert alert-info border-0 bg-info bg-opacity-10">
+                <i class="fas fa-info-circle me-2 text-info"></i>
+                Encontrados <strong>${encontrados}</strong> produto(s) para "<strong>${termo}</strong>"
+            </div>`;
+    }
+}
+
+function mostrarTodosProdutos() {
+    todosProdutos.forEach(produto => {
+        produto.style.display = '';
+        produto.classList.remove('table-success', 'bg-warning', 'bg-opacity-10');
+    });
+    document.getElementById('total-produtos').textContent = todosProdutos.length;
+    atualizarEstoqueBaixo();
+}
+
+function aplicarFiltroEstoque(filtro) {
+    let visiveis = 0;
+    
+    // Limpa o termo de busca e resultado
+    document.getElementById('busca-produto-estoque').value = '';
+    document.getElementById('resultado-busca-estoque').innerHTML = '';
+
+    todosProdutos.forEach(produto => {
+        produto.classList.remove('table-success', 'bg-warning', 'bg-opacity-10');
+        const estoque = parseInt(produto.getAttribute('data-estoque'));
+        
+        let mostrar = false;
+        switch(filtro) {
+            case 'com-estoque':
+                mostrar = estoque > 0;
+                break;
+            case 'estoque-baixo':
+                mostrar = estoque > 0 && estoque <= 10;
+                break;
+            case 'sem-estoque':
+                mostrar = estoque === 0;
+                break;
+            default: // 'todos'
+                mostrar = true;
+                break;
+        }
+        
+        produto.style.display = mostrar ? '' : 'none';
+        if (mostrar) visiveis++;
+    });
+    
+    document.getElementById('total-produtos').textContent = visiveis;
+    atualizarEstoqueBaixo();
+}
+
+function carregarInfoProduto(produtoId) {
+    mostrarModalCarregamento('Carregando informações...');
+    
+    fetch(`/api/produto/${produtoId}`)
+    .then(response => {
+        if (!response.ok) throw new Error('Produto não encontrado');
+        return response.json();
+    })
+    .then(produto => {
+        ocultarModalCarregamento();
+        
+        const infoHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-primary mb-3">${produto.nome}</h6>
+                    <div class="mb-2">
+                        <strong>ID:</strong> <span class="badge bg-primary">#${produto.id}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Preço:</strong> 
+                        <span class="fw-bold text-success">R$ ${parseFloat(produto.preco).toFixed(2)}</span>
+                        ${produto.pesavel ? '<small class="text-muted"> (por kg)</small>' : ''}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Estoque:</strong> 
+                        <span class="fw-bold ${produto.quantidade > 10 ? 'text-success' : produto.quantidade > 0 ? 'text-warning' : 'text-danger'}">
+                            ${produto.quantidade} ${produto.pesavel ? 'kg' : 'un'}
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-2">
+                        <strong>Código Barras:</strong> 
+                        <code class="bg-light px-2 py-1 rounded">${produto.codigo_barras || 'N/A'}</code>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Categoria:</strong> ${produto.categoria || 'Geral'}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Tipo:</strong> 
+                        <span class="badge ${produto.pesavel ? 'bg-warning' : 'bg-info'}">
+                            ${produto.pesavel ? '⚖️ Pesável' : '📦 Unitário'}
+                        </span>
+                    </div>
+                    ${produto.data_criacao ? `
+                    <div class="mb-2">
+                        <strong>Cadastrado em:</strong> ${new Date(produto.data_criacao).toLocaleDateString('pt-BR')}
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            ${produto.descricao ? `
+            <hr>
+            <div class="row">
+                <div class="col-12">
+                    <strong>Descrição:</strong>
+                    <p class="mb-0 text-muted">${produto.descricao}</p>
+                </div>
+            </div>
+            ` : ''}
+        `;
+        
+        document.getElementById('info-produto-conteudo').innerHTML = infoHTML;
+        document.getElementById('btn-editar-produto').href = `/produtos/editar/${produtoId}`;
+        
+        new bootstrap.Modal(document.getElementById('modalInfoProduto')).show();
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        ocultarModalCarregamento();
+        document.getElementById('info-produto-conteudo').innerHTML = 
+            '<div class="alert alert-danger">Erro ao carregar informações do produto.</div>';
+        new bootstrap.Modal(document.getElementById('modalInfoProduto')).show();
+    });
 }
 </script>
 

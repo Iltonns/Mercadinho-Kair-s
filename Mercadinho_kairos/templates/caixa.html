@@ -146,68 +146,45 @@
             <!-- PAGAMENTO -->
             <div class="card border-0 shadow-lg mb-4">
                 <div class="card-header bg-gradient-warning text-white py-3">
-                    <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Pagamento</h5>
+                    <h5 class="mb-0">Pagamento</h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label for="forma-pagamento" class="form-label fw-semibold text-dark">Forma de Pagamento</label>
-                        <select class="form-select border-primary" id="forma-pagamento" required>
-                            <option value="dinheiro">💵 Dinheiro</option>
-                            <option value="cartao_debito">💳 Cartão Débito</option>
-                            <option value="cartao_credito">💳 Cartão Crédito</option>
-                            <option value="pix">📱 PIX</option>
+                        <label for="forma-pagamento" class="form-label">Forma de Pagamento</label>
+                        <select id="forma-pagamento" class="form-select">
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">Pix</option>
+                            <option value="cartao">Cartão</option>
                         </select>
                     </div>
-
-                    <!-- CAMPO DINHEIRO -->
-                    <div id="campo-dinheiro">
-                        <div class="mb-3">
-                            <label for="valor-pago" class="form-label fw-semibold text-dark">Valor Entregue (R$)</label>
-                            <input type="number" class="form-control border-primary" id="valor-pago"
-                                   step="0.01" min="0" placeholder="0.00" value="0.00">
-                        </div>
-                        <!-- INFORMAÇÕES DE TROCO E TOTAL -->
-                        <div class="row mb-2">
-                            <div class="col-6">
-                                <div class="alert alert-success border-0 bg-success bg-opacity-10 py-2 mb-1 mb-lg-0" style="min-height: 56px;">
-                                    <strong class="text-success">Troco:</strong>
-                                    <span class="fw-bold text-success fs-6">R$ <span id="troco">0.00</span></span>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="alert alert-info border-0 bg-info bg-opacity-10 py-2 mb-1 mb-lg-0" style="min-height: 56px;">
-                                    <strong class="text-info">Total:</strong>
-                                    <span class="fw-bold text-info fs-6">R$ <span id="total-carrinho-pagamento">0.00</span></span>
-                                </div>
-                            </div>
-                        </div>
+                    <div id="campo-dinheiro" class="mb-3">
+                        <label for="valor-pago" class="form-label">Valor Recebido</label>
+                        <input type="text" id="valor-pago" class="form-control" value="0.00">
                     </div>
-
-                    <!-- BOTÃO FINALIZAR -->
-                    <div class="d-grid mt-3">
-                        <button class="btn btn-gradient-success btn-lg py-3 shadow" 
-                                onclick="finalizarVenda()" id="btn-finalizar">
-                            <i class="fas fa-check-circle me-2"></i>Finalizar Venda
-                        </button>
+                    <div class="mb-3">
+                        <label class="form-label">Total da Venda</label>
+                        <div class="fw-bold fs-4 text-success">R$ <span id="total-carrinho-pagamento">0.00</span></div>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Troco</label>
+                        <div class="fw-bold fs-4 text-primary">R$ <span id="troco">0.00</span></div>
+                    </div>
+                    <button id="btn-finalizar" class="btn btn-gradient-success w-100 btn-lg" onclick="finalizarVenda()">Finalizar Venda</button>
                 </div>
             </div>
 
             <!-- AJUDA RÁPIDA -->
             <div class="card border-0 shadow-lg">
                 <div class="card-header bg-gradient-secondary text-white py-3">
-                    <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Ajuda Rápida</h5>
+                    <h5 class="mb-0">Ajuda Rápida</h5>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-primary border-0 bg-primary bg-opacity-10 mb-2">
-                        <strong>🔍 Busca Rápida:</strong> Digite código ou nome do produto
-                    </div>
-                    <div class="alert alert-warning border-0 bg-warning bg-opacity-10 mb-2">
-                        <strong>⚖️ Produtos Pesáveis:</strong> Informe o peso quando solicitado
-                    </div>
-                    <div class="alert alert-info border-0 bg-info bg-opacity-10">
-                        <strong>💰 Pagamento:</strong> Selecione a forma de pagamento
-                    </div>
+                    <ul>
+                        <li><b>Enter</b>: Buscar produto</li>
+                        <li><b>F2</b>: Focar no campo de código</li>
+                        <li><b>ESC</b>: Limpar busca</li>
+                        <li><b>Ctrl + Enter</b>: Finalizar venda</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -307,7 +284,13 @@ let produtoPesavelAtual = null;
    ======================================================= */
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔄 Inicializando caixa...');
-    
+
+    // Força o campo de pagamento para "dinheiro" ao carregar
+    const formaPagamentoElem = document.getElementById('forma-pagamento');
+    if (formaPagamentoElem) {
+        formaPagamentoElem.value = 'dinheiro';
+    }
+
     // Verificar se elementos essenciais existem
     const elementosEssenciais = [
         'codigo-barras', 'resultados-busca', 'lista-resultados',
@@ -324,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
     configurarEventos();
     
     // Inicializar interface
-    toggleCampoDinheiro();
+    toggleCampoDinheiro(true); // <-- Passe true para sempre mostrar ao iniciar
     calcularTroco();
     atualizarCarrinho();
     
@@ -719,15 +702,20 @@ function atualizarCarrinho() {
 /* =======================================================
    PAGAMENTO E TROCO
    ======================================================= */
-function toggleCampoDinheiro() {
+function toggleCampoDinheiro(forceShow = false) {
     const formaPagamento = document.getElementById('forma-pagamento').value;
     const campoDinheiro = document.getElementById('campo-dinheiro');
-    
+
     if (campoDinheiro) {
-        campoDinheiro.style.display = formaPagamento === 'dinheiro' ? 'block' : 'none';
+        // Sempre mostra se for dinheiro OU se for forçado (primeira carga)
+        if (formaPagamento === 'dinheiro' || forceShow) {
+            campoDinheiro.style.display = 'block';
+        } else {
+            campoDinheiro.style.display = 'none';
+        }
     }
-    
-    if (formaPagamento === 'dinheiro') {
+
+    if (formaPagamento === 'dinheiro' || forceShow) {
         calcularTroco();
     }
 }

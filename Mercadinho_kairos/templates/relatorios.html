@@ -22,66 +22,70 @@
         </div>
     </div>
 
-    <!-- Cards de Estatísticas Rápidas -->
+
+    <!-- Cards de Estatísticas Rápidas - ATUALIZADO -->
     <div class="row mb-4">
-        <div class="col-xl-2 col-md-4 col-6 mb-3">
-            <div class="card card-statistic bg-gradient-primary text-white shadow-lg">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-boxes fa-2x mb-2 text-white"></i>
-                    <h3 class="text-white mb-0" id="stat-total-produtos">{{ estatisticas.total_produtos or 0 }}</h3>
-                    <small>Total Produtos</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-2 col-md-4 col-6 mb-3">
-            <div class="card card-statistic bg-gradient-warning text-white shadow-lg">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-exclamation-triangle fa-2x mb-2 text-white"></i>
-                    <h3 class="text-white mb-0" id="stat-estoque-baixo">{{ estatisticas.produtos_estoque_baixo or 0 }}</h3>
-                    <small>Estoque Baixo</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-2 col-md-4 col-6 mb-3">
-            <div class="card card-statistic bg-gradient-success text-white shadow-lg">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-check-circle fa-2x mb-2 text-white"></i>
-                    <h3 class="text-white mb-0" id="stat-em-estoque">{{ (estatisticas.total_produtos - estatisticas.produtos_estoque_baixo - produtos_sem_estoque) or 0 }}</h3>
-                    <small>Em Estoque</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-2 col-md-4 col-6 mb-3">
-            <div class="card card-statistic bg-gradient-warning text-white shadow-lg">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-exclamation-triangle fa-2x mb-2 text-white"></i>
-                    <h3 class="text-white mb-0" id="stat-sem-estoque">{{ produtos_sem_estoque or 0 }}</h3>
-                    <small>Sem Estoque</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-2 col-md-4 col-6 mb-3">
-            <div class="card card-statistic bg-gradient-info text-white shadow-lg">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-receipt fa-2x mb-2 text-white"></i>
-                    <h3 class="text-white mb-0" id="stat-total-vendas">{{ estatisticas.total_transacoes or 0 }}</h3>
-                    <small>Total Vendas</small>
-                </div>
-            </div>
-        </div>
-       
-        <div class="col-xl-2 col-md-4 col-6 mb-3">
-            <div class="card card-statistic bg-gradient-orange text-white shadow-lg">
-                <div class="card-body text-center p-3">
-                    <i class="fas fa-dollar-sign fa-2x mb-2 text-white"></i>
-                    <h4 class="text-white mb-0" id="stat-valor-total">R$ {{ "%.2f"|format(estatisticas.valor_estoque or 0) }}</h4>
-                    <small>Valor Estoque</small>
-                </div>
+    <div class="col-xl-2 col-md-4 col-6 mb-3">
+        <div class="card card-statistic bg-gradient-primary text-white shadow-lg">
+            <div class="card-body text-center p-3">
+                <i class="fas fa-boxes fa-2x mb-2 text-white"></i>
+                <h3 class="text-white mb-0" id="stat-total-produtos">{{ estatisticas.total_produtos or 0 }}</h3>
+                <small>Total Produtos</small>
             </div>
         </div>
     </div>
+
+    <div class="col-xl-2 col-md-4 col-6 mb-3">
+        <div class="card card-statistic bg-gradient-warning text-white shadow-lg">
+            <div class="card-body text-center p-3">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2 text-white"></i>
+                <h3 class="text-white mb-0" id="stat-estoque-baixo">{{ estatisticas.produtos_estoque_baixo or 0 }}</h3>
+                <small>Estoque Baixo</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4 col-6 mb-3">
+        <div class="card card-statistic bg-gradient-success text-white shadow-lg">
+            <div class="card-body text-center p-3">
+                <i class="fas fa-check-circle fa-2x mb-2 text-white"></i>
+                <h3 class="text-white mb-0" id="stat-em-estoque">{{ (estatisticas.total_produtos - estatisticas.produtos_estoque_baixo - produtos_sem_estoque) or 0 }}</h3>
+                <small>Em Estoque</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- CORREÇÃO: Card "Valor Venda" agora mostra total de vendas -->
+    <div class="col-xl-2 col-md-4 col-6 mb-3">
+        <div class="card card-statistic bg-gradient-info text-white shadow-lg">
+            <div class="card-body text-center p-3">
+                <i class="fas fa-dollar-sign fa-2x mb-2 text-white"></i>
+                <h4 class="text-white mb-0" id="stat-total-vendas-valor">R$ {{ "%.2f"|format(estatisticas.total_vendas_valor or 0) }}</h4>
+                <small>Valor Vendas</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-2 col-md-4 col-6 mb-3">
+        <div class="card card-statistic bg-gradient-purple text-white shadow-lg">
+            <div class="card-body text-center p-3">
+                <i class="fas fa-receipt fa-2x mb-2 text-white"></i>
+                <h3 class="text-white mb-0" id="stat-total-vendas">{{ estatisticas.total_transacoes or 0 }}</h3>
+                <small>Total Vendas</small>
+            </div>
+        </div>
+    </div>
+   
+    <div class="col-xl-2 col-md-4 col-6 mb-3">
+        <div class="card card-statistic bg-gradient-orange text-white shadow-lg">
+            <div class="card-body text-center p-3">
+                <i class="fas fa-cubes fa-2x mb-2 text-white"></i>
+                <h4 class="text-white mb-0" id="stat-valor-estoque">R$ {{ "%.2f"|format(estatisticas.valor_estoque or 0) }}</h4>
+                <small>Valor Estoque</small>
+            </div>
+        </div>
+    </div>
+  
 
     <!-- Filtros Avançados -->
     <div class="card border-0 shadow-lg mb-4">
@@ -423,8 +427,7 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
+    </div
 
 <!-- Modal de Carregamento -->
 <div class="modal fade" id="modalCarregamento" tabindex="-1" data-bs-backdrop="static">
@@ -541,22 +544,29 @@ function aplicarFiltros() {
 
 
 // Função para atualizar a interface com os dados filtrados
+// Função para atualizar a interface com os dados filtrados - CORRIGIDA
 function atualizarInterface(data) {
+    console.log('Atualizando interface com dados:', data);
+    
     // Atualizar estatísticas rápidas (Cards de cima)
     if (data.estatisticas) {
+        // Cards principais
         document.getElementById('stat-total-produtos').textContent = data.estatisticas.total_produtos || 0;
+        document.getElementById('stat-estoque-baixo').textContent = data.estatisticas.produtos_estoque_baixo || 0;
         
-        // Corrigido: Adiciona verificação de existência (se o elemento for 'null', ignora a atualização)
-        const statEmEstoque = document.getElementById('stat-em-estoque');
-        if(statEmEstoque) statEmEstoque.textContent = (data.estatisticas.total_produtos - data.estatisticas.produtos_estoque_baixo - data.produtos_sem_estoque) || 0;
+        // CORREÇÃO: Cálculo correto para "Em Estoque"
+        const emEstoque = (data.estatisticas.total_produtos || 0) - 
+                         (data.estatisticas.produtos_estoque_baixo || 0) - 
+                         (data.produtos_sem_estoque || 0);
+        document.getElementById('stat-em-estoque').textContent = Math.max(0, emEstoque);
         
-        document.getElementById('stat-sem-estoque').textContent = data.produtos_sem_estoque || 0;
-        document.getElementById('stat-estoque-baixo').textContent = data.estatisticas.produtos_estoque_baixo || 0; // Adicionado
+        // CORREÇÃO: Card "Valor Vendas" agora mostra o total de vendas filtrado
+        document.getElementById('stat-total-vendas-valor').textContent = 
+            'R$ ' + (data.estatisticas.total_vendas_valor || 0).toFixed(2);
+        
         document.getElementById('stat-total-vendas').textContent = data.estatisticas.total_transacoes || 0;
-        
-        // REMOVIDO: stat-itens-vendidos (Não existe nos cards de cima)
-        
-        document.getElementById('stat-valor-total').textContent = 'R$ ' + (data.estatisticas.valor_estoque || 0).toFixed(2);
+        document.getElementById('stat-valor-estoque').textContent = 
+            'R$ ' + (data.estatisticas.valor_estoque || 0).toFixed(2);
     }
 
     // Atualizar badges das abas
@@ -712,20 +722,38 @@ function atualizarTabelaVendas(vendas, estatisticas) {
                 </td>
             </tr>
         `;
+        
+        // CORREÇÃO: Atualiza cards e rodapé para zero quando não há vendas
+        atualizarResumoVendas(0, 0, 0, 0);
+        atualizarRodapeVendas(0);
+        
+        // CORREÇÃO: Também atualiza os cards de estatísticas rápidas para zero
+        document.getElementById('stat-total-vendas-valor').textContent = 'R$ 0.00';
+        document.getElementById('stat-total-vendas').textContent = '0';
+        
         return;
     }
 
     let html = '';
+    let totalVendas = vendas.length;
+    let totalItensVendidos = 0;
+    let totalVendasValor = 0;
+
     vendas.forEach(venda => {
-        const subtotal = (venda.preco_unitario || 0) * (venda.quantidade || 0);
+        const quantidade = venda.quantidade || 0;
+        const precoUnitario = venda.preco_unitario || 0;
+        const subtotal = precoUnitario * quantidade;
+        totalItensVendidos += quantidade;
+        totalVendasValor += subtotal;
+
         html += `
             <tr>
                 <td class="text-center"><span class="badge bg-dark">#${venda.id || 'N/A'}</span></td>
                 <td><small class="text-dark">${venda.data_venda || 'Data não disponível'}</small></td>
                 <td class="text-dark">${venda.cliente_nome || 'Cliente Avulso'}</td>
                 <td class="text-dark">${venda.produto_nome || 'Produto não identificado'}</td>
-                <td class="text-center fw-bold text-dark">${venda.quantidade || 0} un</td>
-                <td class="text-center text-success fw-bold">R$ ${(venda.preco_unitario || 0).toFixed(2)}</td>
+                <td class="text-center fw-bold text-dark">${quantidade} un</td>
+                <td class="text-center text-success fw-bold">R$ ${precoUnitario.toFixed(2)}</td>
                 <td class="text-center fw-bold text-primary">R$ ${subtotal.toFixed(2)}</td>
                 <td class="text-center">
                     <span class="badge bg-light text-dark small">${venda.forma_pagamento || 'N/A'}</span>
@@ -736,20 +764,60 @@ function atualizarTabelaVendas(vendas, estatisticas) {
 
     tbody.innerHTML = html;
 
-    // Atualizar resumo de vendas se existirem estatísticas
-    if (estatisticas) {
-        const totalVendas = document.getElementById('resumo-total-vendas');
-        const itensVendidos = document.getElementById('resumo-itens-vendidos');
-        const ticketMedio = document.getElementById('resumo-ticket-medio');
-        
-        if (totalVendas) totalVendas.textContent = estatisticas.total_transacoes || 0;
-        if (itensVendidos) itensVendidos.textContent = estatisticas.total_itens_vendidos || 0;
-        
-        if (ticketMedio) {
-            const ticket = estatisticas.total_transacoes > 0 ? 
-                (estatisticas.total_vendas_valor || 0) / estatisticas.total_transacoes : 0;
-            ticketMedio.textContent = 'R$ ' + ticket.toFixed(2);
-        }
+    // CORREÇÃO: Atualiza cards e rodapé com os valores filtrados
+    const ticketMedio = totalVendas > 0 ? totalVendasValor / totalVendas : 0;
+    
+    atualizarResumoVendas(totalVendas, totalItensVendidos, totalVendasValor, ticketMedio);
+    atualizarRodapeVendas(totalVendasValor);
+    
+    // CORREÇÃO: Também atualiza os cards de estatísticas rápidas
+    document.getElementById('stat-total-vendas-valor').textContent = 'R$ ' + totalVendasValor.toFixed(2);
+    document.getElementById('stat-total-vendas').textContent = totalVendas;
+    
+    console.log('Vendas processadas:', {
+        totalVendas,
+        totalItensVendidos,
+        totalVendasValor,
+        ticketMedio
+    });
+}
+
+// Função para atualizar os cards do Resumo de Vendas
+// Função para atualizar os cards do Resumo de Vendas - MELHORADA
+function atualizarResumoVendas(totalVendas, totalItensVendidos, totalVendasValor, ticketMedio) {
+    const totalVendasElem = document.getElementById('resumo-total-vendas');
+    const itensVendidosElem = document.getElementById('resumo-itens-vendidos');
+    
+    // Encontrar os elementos de faturamento e ticket médio de forma mais robusta
+    const cardsContainer = document.querySelector('#vendas .row.mt-4');
+    const faturamentoElem = cardsContainer ? cardsContainer.querySelector('.col-md-3:nth-child(3) h4') : null;
+    const ticketMedioElem = cardsContainer ? cardsContainer.querySelector('.col-md-3:nth-child(4) h4') : null;
+
+    if (totalVendasElem) totalVendasElem.textContent = totalVendas;
+    if (itensVendidosElem) itensVendidosElem.textContent = totalItensVendidos;
+    if (faturamentoElem) faturamentoElem.textContent = 'R$ ' + totalVendasValor.toFixed(2);
+    if (ticketMedioElem) ticketMedioElem.textContent = 'R$ ' + ticketMedio.toFixed(2);
+    
+    console.log('Resumo atualizado:', {
+        totalVendas,
+        totalItensVendidos, 
+        totalVendasValor,
+        ticketMedio
+    });
+}
+
+// Função para atualizar o rodapé da tabela de vendas
+function atualizarRodapeVendas(totalVendasValor) {
+    const tfoot = document.querySelector('#tabela-vendas tfoot');
+    if (tfoot) {
+        tfoot.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-end fw-bold fs-5">TOTAL GERAL DE VENDAS:</td>
+                <td colspan="2" class="text-center fw-bold text-warning fs-5">
+                    R$ ${totalVendasValor.toFixed(2)}
+                </td>
+            </tr>
+        `;
     }
 }
 
