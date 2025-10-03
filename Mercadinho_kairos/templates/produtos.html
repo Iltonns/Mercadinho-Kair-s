@@ -139,10 +139,8 @@
                     <button class="btn btn-outline-secondary" id="btn-recargar" title="Recarregar lista">
                         <i class="fas fa-sync-alt"></i>
                     </button>
-                    <button class="btn btn-outline-info" id="btn-exportar" title="Exportar lista">
-                        <i class="fas fa-download"></i>
-                    </button>
                 </div>
+                
             </div>
         </div>
         <div class="card-body">
@@ -640,14 +638,17 @@ function ocultarModalCarregamento() {
     if (modal) modal.hide();
 }
 
+// CORREÇÃO: Funções de exportação para chamar o servidor
 function exportarParaExcel() {
     mostrarNotificacao('📊 Exportando para Excel...', 'info');
-    // Implementar exportação Excel
+    // Redireciona para a rota global de exportação do app.py
+    window.location.href = '{{ url_for("exportar_excel") }}';
 }
 
 function exportarParaPDF() {
     mostrarNotificacao('📄 Exportando para PDF...', 'info');
-    // Implementar exportação PDF
+    // Redireciona para a rota global de exportação do app.py
+    window.location.href = '{{ url_for("exportar_pdf") }}';
 }
 
 function mostrarNotificacao(mensagem, tipo) {
